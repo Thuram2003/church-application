@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { FormElement, FormHeader, isFormField } from "@/types/form";
 
 interface FieldPreviewProps {
@@ -58,7 +59,7 @@ export function FieldPreview({
           <Input type="email" placeholder="your@email.com" />
         )}
         {element.type === "phone" && (
-          <Input type="tel" placeholder="+237 XXX XXX XXX" />
+          <PhoneInput international defaultCountry="CM" />
         )}
         {element.type === "number" && <Input type="number" placeholder="0" />}
         {element.type === "date" && (

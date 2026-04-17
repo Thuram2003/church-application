@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { EnvelopeSimple, Eye, EyeSlash } from "@phosphor-icons/react";
+import { Envelope, Eye, EyeSlash } from "@phosphor-icons/react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
@@ -25,6 +25,8 @@ import {
 } from "@/components/ui/select";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useSignUp } from "@/hooks/use-auth";
+import { toast } from "sonner";
 
 const registerSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -43,7 +45,21 @@ type RegisterValues = z.infer<typeof registerSchema>;
 export const RegisterForm = () => {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+
+  const { mutate: register, isPending } = useSignUp({
+    onSuccess: (data, variables) => {
+      toast.success("Account created!", {
+        description: "Please check your email to verify your account.",
+      });
+      // Redirect to verify-email page with email
+      router.push(`/verify-email?email=${encodeURIComponent(variables.email)}`);
+    },
+    onError: (error: any) => {
+      toast.error("Registration failed", {
+        description: error.response?.data?.message || "Please try again",
+      });
+    },
+  });
 
   const form = useForm<RegisterValues>({
     resolver: zodResolver(registerSchema),
@@ -59,27 +75,22 @@ export const RegisterForm = () => {
   });
 
   const onSubmit = async (values: RegisterValues) => {
-    setIsLoading(true);
-    try {
-      // TODO: Implement actual registration logic
-      console.log("Register values:", values);
-      
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      // Redirect to home after successful registration
-      router.push("/home");
-    } catch (error) {
-      console.error("Registration error:", error);
-    } finally {
-      setIsLoading(false);
-    }
+    register({
+      name: `${values.firstName} ${values.lastName}`,
+      email: values.email,
+      password: values.password,
+      firstName: values.firstName,
+      lastName: values.lastName,
+      country: values.country,
+      rememberMe: true,
+      callbackURL: "/onboarding",
+    });
   };
 
   return (
     <div className="w-full max-w-md space-y-6 animate-in fade-in duration-500">
       <div className="space-y-2 text-left">
-        <h1 className="text-3xl text-black">Sign up</h1>
+        <h1 className="text-3xl text-black font-bold">Sign up</h1>
         <p className="text-black/40 md:text-base font-normal">
           Create your account to get started with church management
         </p>
@@ -166,7 +177,7 @@ export const RegisterForm = () => {
                       {...field}
                     />
                     <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-black/40">
-                      <EnvelopeSimple size={18} />
+                      <Envelope size={18} />
                     </div>
                   </div>
                 </FormControl>
@@ -250,10 +261,10 @@ export const RegisterForm = () => {
 
           <Button
             type="submit"
-            disabled={isLoading}
+            disabled={isPending}
             className="w-full h-11 bg-primary hover:bg-primary-dark text-white font-normal transition-all"
           >
-            {isLoading ? "Creating account..." : "Create account"}
+            {isPending ? "Creating account..." : "Create account"}
           </Button>
 
           <div className="text-center sm:text-left pt-2">

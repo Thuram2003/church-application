@@ -8,7 +8,7 @@ import {
   Stack, Calculator, Gear, Calendar, DoorOpen,
   Package, Clock, Bell, Envelope, ChatCircle, Megaphone,
   ChatCircleDots, ClipboardText, ChartBar, GearSix, UserGear,
-  Question, ArrowSquareOut, DotsThree, UsersThree, HouseLine,
+  Question, ArrowSquareOut, UsersThree, HouseLine,
   Target, ChartPie, HandCoins,  Broadcast, Faders, SunHorizonIcon,
   CheckSquare,
 } from "@phosphor-icons/react";
@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { AppSidebarUserMenu } from "@/components/app-sidebar-user-menu";
 
 interface NavItem {
   id: string;
@@ -232,23 +233,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           })}
         </SidebarMenu>
 
-        {/* User Profile */}
-        <div className="flex items-center gap-3 px-2 py-2">
-          <div className="w-9 h-9 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
-            <span className="text-white font-semibold text-sm">T</span>
-          </div>
-          <div className="flex-1 min-w-0 group-data-[collapsible=icon]:hidden">
-            <p className="text-sm font-semibold text-sidebar-foreground truncate">Tjay</p>
-            <p className="text-xs text-sidebar-foreground/70">Administrator</p>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="group-data-[collapsible=icon]:hidden hover:bg-primary-lighter"
-          >
-            <DotsThree className="w-5 h-5" />
-          </Button>
-        </div>
+        {/* User Profile Menu */}
+        <AppSidebarUserMenu />
       </SidebarFooter>
     </Sidebar>
   );

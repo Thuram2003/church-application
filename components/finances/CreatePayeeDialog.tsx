@@ -4,6 +4,7 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PhoneInput } from "@/components/ui/phone-input";
 import {
   Dialog,
   DialogContent,
@@ -138,12 +139,11 @@ export function CreatePayeeDialog({
             <Label htmlFor="payee-phone" className="text-xs font-medium text-gray-700">
               Phone
             </Label>
-            <Input
-              id="payee-phone"
-              type="tel"
-              placeholder="+237 XXX XXX XXX"
+            <PhoneInput
+              international
+              defaultCountry="CM"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(value) => setPhone(value || "")}
             />
           </div>
         </div>

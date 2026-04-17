@@ -54,7 +54,7 @@ export function InviteUserDialog({
         <DialogHeader className="px-6 pt-6 pb-4 flex-shrink-0 border-b-0">
           <DialogTitle>Invite user</DialogTitle>
           <DialogDescription className="pt-2">
-            Invite and manage what users can see when they log into Gracely.
+            Invite and manage what users can see when they log into Movementz.
           </DialogDescription>
         </DialogHeader>
 

@@ -262,7 +262,7 @@ export default function ChatPage() {
                     </div>
                   </div>
                   <h3 className="text-2xl font-light text-gray-700 mb-3">
-                    Gracely Chat
+                    Movementz Chat
                   </h3>
                   <p className="text-sm text-gray-500 max-w-md mx-auto leading-relaxed">
                     Send and receive messages with your church community.

@@ -152,6 +152,7 @@ export default function AuthLayout({
           src="/Images/Worship1.jpg"
           alt="Church Worship"
           fill
+          sizes="50vw"
           className="object-cover"
           priority
           quality={90}

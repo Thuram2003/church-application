@@ -18,8 +18,8 @@ export function ChurchDetailsTab({ initialData }: ChurchDetailsTabProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [churchDetails, setChurchDetails] = useState(
     initialData || {
-      name: "Oneworld shilo Ministries",
-      email: "alexmice856@gmail.com",
+      name: "Cavary Baptist Church",
+      email: "baptistchurch@gmail.com",
       logo: null as File | null,
     }
   );

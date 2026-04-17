@@ -3,8 +3,12 @@
 import Link from "next/link";
 import { House, ArrowLeft, MagnifyingGlass, Question } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
+import { useSession } from "@/hooks/use-auth";
 
 export default function NotFound() {
+  const { data: session } = useSession();
+  const isAuthenticated = !!session?.user;
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-[var(--page-bg)] p-8">
       <div className="max-w-lg w-full">
@@ -41,7 +45,7 @@ export default function NotFound() {
             </div>
             <ul className="text-xs text-gray-500 space-y-1.5 text-left pl-6">
               <li>• Check the URL for typos</li>
-              <li>• Return to the dashboard</li>
+              <li>• {isAuthenticated ? "Return to the dashboard" : "Go to login page"}</li>
               <li>• Contact support if you need help</li>
             </ul>
           </div>
@@ -49,9 +53,9 @@ export default function NotFound() {
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
             <Button asChild className="gap-2 px-6">
-              <Link href="/home">
+              <Link href={isAuthenticated ? "/home" : "/login"}>
                 <House className="w-4 h-4" />
-                Go to Dashboard
+                {isAuthenticated ? "Go to Dashboard" : "Go to Login"}
               </Link>
             </Button>
             <Button 
