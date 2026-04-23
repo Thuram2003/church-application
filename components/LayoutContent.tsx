@@ -1,29 +1,34 @@
 "use client";
 
 import { AppSidebar } from "@/components/app-sidebar";
-import {
-  SidebarInset,
-  SidebarProvider,
-} from "@/components/ui/sidebar";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { BrandedLoader } from "@/components/ui/loader";
 import { usePathname } from "next/navigation";
-import { useSession } from "@/hooks/use-auth";
+import { useSession } from "next-auth/react";
 
 export function LayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { data: session, isLoading } = useSession();
+  const { data: session, status } = useSession();
 
-  const isOnboarding = pathname === "/onboarding";
-  const isAuthPage = pathname?.startsWith("/login") || 
-                     pathname?.startsWith("/register") || 
-                     pathname?.startsWith("/forgot-password") ||
-                     pathname?.startsWith("/verify") ||
-                     pathname === "/";
+  // Show loader only while session is resolving on first load
+  if (status === "loading") {
+    return <BrandedLoader text="Loading your workspace..." />;
+  }
 
-  // Check if user is authenticated
   const isAuthenticated = !!session?.user;
+  const hasWorkspace = !!session?.user?.churchId && !!session?.user?.branchId;
 
-  // Pages without sidebar: auth pages, onboarding, or any page when not authenticated
-  const shouldHideSidebar = isOnboarding || isAuthPage || !isAuthenticated;
+  const shouldHideSidebar =
+    pathname === "/onboarding" ||
+    pathname === "/workspace-selection" ||
+    pathname?.startsWith("/(auth)") ||
+    pathname?.startsWith("/login") ||
+    pathname?.startsWith("/register") ||
+    pathname?.startsWith("/forgot-password") ||
+    pathname?.startsWith("/verify") ||
+    pathname === "/" ||
+    !isAuthenticated ||
+    !hasWorkspace;
 
   if (shouldHideSidebar) {
     return <>{children}</>;
@@ -33,9 +38,7 @@ export function LayoutContent({ children }: { children: React.ReactNode }) {
     <SidebarProvider defaultOpen={true}>
       <AppSidebar />
       <SidebarInset>
-        <main className="flex-1 overflow-auto bg-page-bg">
-          {children}
-        </main>
+        <main className="flex-1 overflow-auto bg-page-bg">{children}</main>
       </SidebarInset>
     </SidebarProvider>
   );

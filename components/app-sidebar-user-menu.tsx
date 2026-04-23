@@ -49,11 +49,9 @@ export function AppSidebarUserMenu() {
     router.push("/profile");
   };
 
-  const handleSwitchChurch = () => {
+  const handleSwitchWorkspace = () => {
     setOpen(false);
-    toast.info("Church switching", {
-      description: "This feature will be available soon",
-    });
+    router.push("/workspace-selection");
   };
 
   // Get user data from session
@@ -125,10 +123,7 @@ export function AppSidebarUserMenu() {
       >
         <DropdownMenuLabel>
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{fullName}</p>
-            <p className="text-xs leading-none text-muted-foreground">
-              {userEmail}
-            </p>
+            <p className="text-sm font-medium leading-none text-primary ">{fullName}</p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
@@ -137,11 +132,11 @@ export function AppSidebarUserMenu() {
           <span>Profile</span>
         </DropdownMenuItem>
         <DropdownMenuItem
-          onClick={handleSwitchChurch}
+          onClick={handleSwitchWorkspace}
           className="cursor-pointer"
         >
           <Buildings className="mr-2 h-4 w-4" />
-          <span>Switch Church/Branch</span>
+          <span>Switch Workspace</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem

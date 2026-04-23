@@ -24,9 +24,11 @@ export const onboardingService = {
     };
 
     const response = await apiClient.post<ChurchOnboardingResponse>(
-      "/v1/onboarding/church",
+      "/onboarding/church",
       payload
     );
-    return response.data;
+    // Handle potential data wrapper from backend
+    const result = response.data as any;
+    return result.data || result;
   },
 };

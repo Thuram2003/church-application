@@ -11,18 +11,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DotsThree, ArrowsDownUp } from "@phosphor-icons/react";
+import type { FamilyTableData } from "@/types/families";
 
-export type Family = {
-  id: number;
-  name: string;
-  adults: number;
-  children: number;
-  elders: number;
-  totalMembers: number;
-  status: string;
-};
-
-export const familiesColumns: ColumnDef<Family>[] = [
+export const familiesColumns: ColumnDef<FamilyTableData>[] = [
   {
     id: "select",
     header: ({ table }) => (
@@ -49,10 +40,14 @@ export const familiesColumns: ColumnDef<Family>[] = [
     accessorKey: "name",
     header: ({ column }) => {
       return (
-        <div className="flex items-center gap-1">
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="h-auto p-0 font-normal"
+        >
           Family name
-          <ArrowsDownUp className="w-3 h-3" />
-        </div>
+          <ArrowsDownUp className="ml-1 w-3 h-3" />
+        </Button>
       );
     },
     cell: ({ row }) => {
@@ -91,38 +86,33 @@ export const familiesColumns: ColumnDef<Family>[] = [
     accessorKey: "totalMembers",
     header: ({ column }) => {
       return (
-        <div className="flex items-center gap-1">
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="h-auto p-0 font-normal"
+        >
           Total Members
-          <ArrowsDownUp className="w-3 h-3" />
-        </div>
+          <ArrowsDownUp className="ml-1 w-3 h-3" />
+        </Button>
       );
     },
     cell: ({ row }) => {
       return (
         <span className="text-sm font-medium">
-          {row.getValue("totalMembers")}
+          {row.getValue("totalMembers") || row.original.memberCount || 0}
         </span>
       );
     },
   },
   {
-    accessorKey: "status",
-    header: ({ column }) => {
-      return (
-        <div className="flex items-center gap-1">
-          Status
-          <ArrowsDownUp className="w-3 h-3" />
-        </div>
-      );
-    },
+    accessorKey: "headOfHouse",
+    header: "Head of House",
     cell: ({ row }) => {
+      const headOfHouse = row.original.headOfHouse;
       return (
-        <Badge
-          variant="secondary"
-          className="bg-green-50 text-green-700 border-green-200"
-        >
-          {row.getValue("status")}
-        </Badge>
+        <span className="text-sm">
+          {headOfHouse?.name || "Not assigned"}
+        </span>
       );
     },
   },

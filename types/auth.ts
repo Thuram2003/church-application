@@ -13,6 +13,64 @@ export interface User {
   archivedAt?: string | null;
 }
 
+// Member record from backend
+export interface MemberRecord {
+  id: string;
+  churchId: string;
+  branchId: string | null;
+  userId: string;
+  familyId: string | null;
+  role: "overseer" | "admin" | "pastor" | "member";
+  familyRole: string;
+  gender: string;
+  maritalStatus: string;
+  birthDate: string | null;
+  phoneNumber: string | null;
+  ageGroup: string | null;
+  isVisitor: boolean;
+  status: string;
+  createdBy: string | null;
+  createdAt: string;
+  archivedAt: string | null;
+  church: {
+    id: string;
+    name: string;
+    slug: string;
+    logo: string | null;
+    denomination: string | null;
+    metadata: any;
+    createdAt: string;
+    archivedAt: string | null;
+  };
+  branch: {
+    id: string;
+    churchId: string;
+    name: string;
+    address: string | null;
+    city: string | null;
+    state: string | null;
+    country: string | null;
+    zipCode: string | null;
+    phoneNumber: string | null;
+    email: string | null;
+    website: string | null;
+    createdAt: string;
+    archivedAt: string | null;
+  } | null;
+}
+
+// Grouped church structure for UI
+export interface GroupedChurch {
+  church: MemberRecord["church"];
+  branches: Array<{
+    id: string;
+    name: string;
+    city: string | null;
+    memberRole: string;
+    memberId: string;
+  }>;
+}
+
 // Session type based on Better Auth API
 export interface Session {
   id: string;
@@ -79,4 +137,18 @@ export interface ChangePasswordRequest {
 export interface UpdateUserRequest {
   name?: string;
   image?: string;
+}
+
+// Workspace switching
+export interface WorkspaceSwitchRequest {
+  branchId: string;
+}
+
+export interface WorkspaceSwitchResponse {
+  session: {
+    user: User;
+  };
+  role: "overseer" | "admin" | "pastor" | "member";
+  memberId: string;
+  churchId: string;
 }

@@ -24,7 +24,6 @@ import {
 const churchInfoSchema = z.object({
   name: z.string().min(2, "Church name must be at least 2 characters"),
   denomination: z.string().min(2, "Denomination is required"),
-  metadata: z.string().optional(),
 });
 
 export type ChurchInfoData = z.infer<typeof churchInfoSchema>;
@@ -58,7 +57,6 @@ export function ChurchInfoStep({ onNext, initialData }: ChurchInfoStepProps) {
     defaultValues: initialData || {
       name: "",
       denomination: "",
-      metadata: "",
     },
   });
 

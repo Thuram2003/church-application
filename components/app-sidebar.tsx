@@ -8,16 +8,29 @@ import {
   Stack, Calculator, Gear, Calendar, DoorOpen,
   Package, Clock, Bell, Envelope, ChatCircle, Megaphone,
   ChatCircleDots, ClipboardText, ChartBar, GearSix, UserGear,
-  Question, ArrowSquareOut, UsersThree, HouseLine,
+  Question, SidebarSimple, UsersThree, HouseLine,
   Target, ChartPie, HandCoins,  Broadcast, Faders, SunHorizonIcon,
-  CheckSquare,
+  CheckSquare, CaretRight, CaretLeft, BookOpen,
 } from "@phosphor-icons/react";
 
 import {
   Sidebar, SidebarContent, SidebarFooter,
   SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarGroup,
   SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem,
+  useSidebar, SidebarRail,
 } from "@/components/ui/sidebar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Accordion,
   AccordionContent,
@@ -78,7 +91,13 @@ const navigationItems: NavItem[] = [
     ],
   },
   { id: "forms", label: "Forms", icon: ClipboardText, href: "/forms" },
-  { id: "devotion", label: "Devotion", icon: SunHorizonIcon, href: "/devotion" },
+  {
+    id: "spiritual", label: "Spiritual", icon: SunHorizonIcon,
+    children: [
+      { id: "devotion", label: "Devotion", icon: SunHorizonIcon, href: "/devotion" },
+      { id: "bible", label: "Bible", icon: BookOpen, href: "/bible" },
+    ],
+  },
   {
     id: "reports", label: "Reports and Metrics", icon: ChartBar,
     children: [
@@ -96,6 +115,8 @@ const bottomNav = [
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
+  const { toggleSidebar, state } = useSidebar();
+  const isCollapsed = state === "collapsed";
 
   const isActive = (href?: string) => {
     if (!href) return false;
@@ -108,102 +129,207 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     return pathname === href || pathname.startsWith(href + "/");
   };
 
+  const hasActiveChild = (item: NavItem) => {
+    if (!item.children) return false;
+    return item.children.some(child => isActive(child.href));
+  };
+
   return (
     <Sidebar collapsible="icon" {...props} className="border-sidebar-border bg-white">
-      <SidebarContent className="bg-sidebar">
-        <SidebarGroup className="p-0">
+      <TooltipProvider delayDuration={0}>
+        <SidebarContent className="bg-sidebar">
+          <SidebarGroup className="p-0">
           {/* Header */}
-          <div className="flex items-center justify-between px-3 pt-3 pb-2">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary rounded flex items-center justify-center">
-                <svg viewBox="0 0 24 24" className="w-4 h-4 text-white" fill="currentColor">
-                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-                </svg>
-              </div>
-              <span className="text-sm font-bold text-sidebar-foreground group-data-[collapsible=icon]:hidden">
-                Movementz
-              </span>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              className="group-data-[collapsible=icon]:hidden text-primary hover:text-primary-dark hover:bg-primary-lighter"
-              asChild
-            >
-              <a href="/portal" target="_blank" rel="noopener noreferrer">
-                <ArrowSquareOut className="w-4 h-4" />
-              </a>
-            </Button>
+          <div className="flex items-center justify-between px-3 pt-3 pb-2 transition-all duration-300 ease-in-out">
+            {!isCollapsed ? (
+              <>
+                <div className="flex items-center gap-2 animate-in fade-in duration-300">
+                  <div className="w-8 h-8 bg-primary rounded flex items-center justify-center">
+                    <svg viewBox="0 0 24 24" className="w-4 h-4 text-white" fill="currentColor">
+                      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                    </svg>
+                  </div>
+                  <span className="text-sm font-bold text-sidebar-foreground animate-in fade-in slide-in-from-left-2 duration-300">
+                    Movementz
+                  </span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="text-primary hover:text-primary-dark hover:bg-primary-lighter transition-all duration-200 animate-in fade-in duration-300"
+                  onClick={toggleSidebar}
+                  aria-label="Collapse sidebar"
+                >
+                  <SidebarSimple weight="bold" className="w-5 h-5" />
+                </Button>
+              </>
+            ) : (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    className="w-full text-primary hover:text-primary-dark hover:bg-primary-lighter transition-all duration-200 animate-in fade-in zoom-in-50 duration-300"
+                    onClick={toggleSidebar}
+                    aria-label="Expand sidebar"
+                  >
+                    <SidebarSimple weight="fill" className="w-5 h-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <p>Expand sidebar</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
           </div>
 
           {/* Navigation */}
-          <SidebarMenu className="px-2 py-2">
-            <Accordion type="multiple" className="w-full space-y-1">
-              {navigationItems.map((item) => {
-                const hasChildren = !!item.children?.length;
-                const itemActive = isActive(item.href);
+          <SidebarMenu className="px-2 py-2 transition-all duration-300">
+            {!isCollapsed ? (
+              <Accordion type="multiple" className="w-full space-y-1 animate-in fade-in duration-300">
+                {navigationItems.map((item) => {
+                  const hasChildren = !!item.children?.length;
+                  const itemActive = isActive(item.href);
 
-                if (!hasChildren) {
+                  if (!hasChildren) {
+                    return (
+                      <SidebarMenuItem key={item.id}>
+                        <SidebarMenuButton 
+                          asChild 
+                          isActive={itemActive}
+                          className={cn(
+                            "sidebar-menu-item",
+                            itemActive && "sidebar-menu-item-active"
+                          )}
+                        >
+                          <Link href={item.href || "#"}>
+                            <item.icon className="w-[18px] h-[18px]" />
+                            <span>{item.label}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  }
+
+                  return (
+                    <AccordionItem
+                      key={item.id}
+                      value={item.id}
+                      className="border-0"
+                    >
+                      <AccordionTrigger className="sidebar-accordion-trigger py-2 px-2 rounded-md hover:no-underline [&[data-state=open]>svg]:rotate-180">
+                        <div className="flex items-center gap-3">
+                          <item.icon className="w-[18px] h-[18px]" />
+                          <span className="text-sm font-medium">{item.label}</span>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="pb-1 pt-1">
+                        <SidebarMenuSub className="border-l-0">
+                          {item.children?.map((child) => {
+                            const childActive = isActive(child.href);
+                            return (
+                              <SidebarMenuSubItem key={child.id}>
+                                <SidebarMenuSubButton
+                                  asChild
+                                  isActive={childActive}
+                                  className={cn(
+                                    "sidebar-menu-item",
+                                    childActive && "sidebar-menu-item-active"
+                                  )}
+                                >
+                                  <Link href={child.href || "#"}>
+                                    <child.icon className="w-[18px] h-[18px]" />
+                                    <span>{child.label}</span>
+                                  </Link>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                            );
+                          })}
+                        </SidebarMenuSub>
+                      </AccordionContent>
+                    </AccordionItem>
+                  );
+                })}
+              </Accordion>
+            ) : (
+              <div className="space-y-1 animate-in fade-in zoom-in-95 duration-300">
+                {navigationItems.map((item) => {
+                  const hasChildren = !!item.children?.length;
+                  const itemActive = isActive(item.href);
+
+                  if (!hasChildren) {
+                    return (
+                      <SidebarMenuItem key={item.id}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <SidebarMenuButton 
+                              asChild 
+                              isActive={itemActive}
+                              className={cn(
+                                "sidebar-menu-item justify-center",
+                                itemActive && "sidebar-menu-item-active"
+                              )}
+                            >
+                              <Link href={item.href || "#"}>
+                                <item.icon className="w-[18px] h-[18px]" />
+                              </Link>
+                            </SidebarMenuButton>
+                          </TooltipTrigger>
+                          <TooltipContent side="right">
+                            <p>{item.label}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </SidebarMenuItem>
+                    );
+                  }
+
                   return (
                     <SidebarMenuItem key={item.id}>
-                      <SidebarMenuButton 
-                        asChild 
-                        isActive={itemActive}
-                        className={cn(
-                          "sidebar-menu-item",
-                          itemActive && "sidebar-menu-item-active"
-                        )}
-                      >
-                        <Link href={item.href || "#"}>
-                          <item.icon className="w-[18px] h-[18px]" />
-                          <span>{item.label}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                }
-
-                return (
-                  <AccordionItem
-                    key={item.id}
-                    value={item.id}
-                    className="border-0"
-                  >
-                    <AccordionTrigger className="sidebar-accordion-trigger py-2 px-2 rounded-md hover:no-underline [&[data-state=open]>svg]:rotate-180">
-                      <div className="flex items-center gap-3">
-                        <item.icon className="w-[18px] h-[18px]" />
-                        <span className="text-sm font-medium">{item.label}</span>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="pb-1 pt-1">
-                      <SidebarMenuSub className="border-l-0">
-                        {item.children?.map((child) => {
-                          const childActive = isActive(child.href);
-                          return (
-                            <SidebarMenuSubItem key={child.id}>
-                              <SidebarMenuSubButton
-                                asChild
-                                isActive={childActive}
-                                className={cn(
-                                  "sidebar-menu-item",
-                                  childActive && "sidebar-menu-item-active"
-                                )}
+                      <DropdownMenu>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <DropdownMenuTrigger asChild>
+                              <SidebarMenuButton 
+                                className="sidebar-menu-item justify-center relative"
                               >
-                                <Link href={child.href || "#"}>
-                                  <child.icon className="w-[18px] h-[18px]" />
+                                <div className="relative">
+                                  <item.icon className="w-[18px] h-[18px]" />
+                                  {hasActiveChild(item) && (
+                                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-primary rounded-full border border-white animate-pulse" />
+                                  )}
+                                </div>
+                              </SidebarMenuButton>
+                            </DropdownMenuTrigger>
+                          </TooltipTrigger>
+                          <TooltipContent side="right">
+                            <p>{item.label}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        <DropdownMenuContent side="right" align="start" className="w-48">
+                          {item.children?.map((child) => {
+                            const childActive = isActive(child.href);
+                            return (
+                              <DropdownMenuItem key={child.id} asChild>
+                                <Link 
+                                  href={child.href || "#"}
+                                  className={cn(
+                                    "flex items-center gap-2 cursor-pointer",
+                                    childActive && "bg-primary-light text-primary font-medium"
+                                  )}
+                                >
+                                  <child.icon className="w-4 h-4" />
                                   <span>{child.label}</span>
                                 </Link>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          );
-                        })}
-                      </SidebarMenuSub>
-                    </AccordionContent>
-                  </AccordionItem>
-                );
-              })}
-            </Accordion>
-
+                              </DropdownMenuItem>
+                            );
+                          })}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </div>
+            )}
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
@@ -215,19 +341,41 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             const itemActive = isActive(item.href);
             return (
               <SidebarMenuItem key={item.id}>
-                <SidebarMenuButton 
-                  asChild 
-                  isActive={itemActive}
-                  className={cn(
-                    "sidebar-menu-item",
-                    itemActive && "sidebar-menu-item-active"
-                  )}
-                >
-                  <Link href={item.href || "#"}>
-                    <item.icon className="w-[18px] h-[18px]" />
-                    <span>{item.label}</span>
-                  </Link>
-                </SidebarMenuButton>
+                {!isCollapsed ? (
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={itemActive}
+                    className={cn(
+                      "sidebar-menu-item",
+                      itemActive && "sidebar-menu-item-active"
+                    )}
+                  >
+                    <Link href={item.href || "#"}>
+                      <item.icon className="w-[18px] h-[18px]" />
+                      <span>{item.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                ) : (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <SidebarMenuButton 
+                        asChild 
+                        isActive={itemActive}
+                        className={cn(
+                          "sidebar-menu-item justify-center",
+                          itemActive && "sidebar-menu-item-active"
+                        )}
+                      >
+                        <Link href={item.href || "#"}>
+                          <item.icon className="w-[18px] h-[18px]" />
+                        </Link>
+                      </SidebarMenuButton>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      <p>{item.label}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
               </SidebarMenuItem>
             );
           })}
@@ -236,6 +384,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         {/* User Profile Menu */}
         <AppSidebarUserMenu />
       </SidebarFooter>
+      <SidebarRail />
+      </TooltipProvider>
     </Sidebar>
   );
 }

@@ -4,6 +4,7 @@ import * as React from "react";
 import { Plus, LockKey, Globe, UsersFour } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Dialog,
   DialogContent,
@@ -11,18 +12,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-// Group data type
-interface GroupData {
-  groupName: string;
-  groupType: "private" | "public" | "team";
-  groupImage?: string;
-}
+import type { CreateGroupRequest, GroupVisibility } from "@/types/groups";
 
 // Props for the dialog
 interface CreateGroupDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (group: GroupData) => void;
+  onSubmit: (group: CreateGroupRequest) => void;
 }
 
 export function CreateGroupDialog({
@@ -31,7 +27,10 @@ export function CreateGroupDialog({
   onSubmit,
 }: CreateGroupDialogProps) {
   const [groupName, setGroupName] = React.useState("");
-  const [groupType, setGroupType] = React.useState<"private" | "public" | "team">("private");
+  const [description, setDescription] = React.useState("");
+  const [location, setLocation] = React.useState("");
+  const [meetupSummary, setMeetupSummary] = React.useState("");
+  const [visibility, setVisibility] = React.useState<GroupVisibility>("private");
   const [imagePreview, setImagePreview] = React.useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -55,14 +54,20 @@ export function CreateGroupDialog({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit({
-      groupName,
-      groupType,
-      groupImage: imagePreview || undefined,
+      name: groupName,
+      description: description || undefined,
+      location: location || undefined,
+      meetupSummary: meetupSummary || undefined,
+      visibility,
+      iconUrl: imagePreview || undefined,
     });
     onOpenChange(false);
     // Reset form
     setGroupName("");
-    setGroupType("private");
+    setDescription("");
+    setLocation("");
+    setMeetupSummary("");
+    setVisibility("private");
     setImagePreview(null);
   };
 
@@ -79,7 +84,7 @@ export function CreateGroupDialog({
           <div className="flex-1 overflow-y-auto px-6 py-5">
             <div className="space-y-4">
           <div className="flex gap-4">
-            {/* Group Image Upload */}
+            {/* Group Avatar */}
             <div className="flex-shrink-0">
               <input
                 ref={fileInputRef}
@@ -91,16 +96,21 @@ export function CreateGroupDialog({
               <button
                 type="button"
                 onClick={handleImageClick}
-                className="w-32 h-32 border-2 border-dashed border-primary rounded-sm flex items-center justify-center bg-primary-lighter hover:bg-primary-light transition-colors overflow-hidden"
+                className="relative group"
               >
-                {imagePreview ? (
-                  <img
-                    src={imagePreview}
-                    alt="Group preview"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <Plus className="w-8 h-8 text-primary" />
+                <Avatar className="w-32 h-32 border-2 border-dashed border-primary hover:border-primary-dark transition-colors">
+                  {imagePreview ? (
+                    <AvatarImage src={imagePreview} alt="Group avatar" />
+                  ) : (
+                    <AvatarFallback className="bg-primary-lighter text-primary hover:bg-primary-light transition-colors">
+                      <Plus className="w-8 h-8" />
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+                {imagePreview && (
+                  <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Plus className="w-6 h-6 text-white" />
+                  </div>
                 )}
               </button>
             </div>
@@ -120,13 +130,52 @@ export function CreateGroupDialog({
             </div>
           </div>
 
+          {/* Description */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">
+              Description
+            </label>
+            <Input
+              placeholder="Brief description of your group"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="h-10"
+            />
+          </div>
+
+          {/* Location */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">
+              Location
+            </label>
+            <Input
+              placeholder="Room 204 / Zoom link in welcome email"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              className="h-10"
+            />
+          </div>
+
+          {/* Meetup Summary */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">
+              Meetup Schedule
+            </label>
+            <Input
+              placeholder="Every Thursday at 7pm"
+              value={meetupSummary}
+              onChange={(e) => setMeetupSummary(e.target.value)}
+              className="h-10"
+            />
+          </div>
+
           {/* Group Type Selection */}
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => setGroupType("private")}
+              onClick={() => setVisibility("private")}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-sm border transition-colors ${
-                groupType === "private"
+                visibility === "private"
                   ? "bg-primary-lighter border-primary text-primary"
                   : "bg-white border-gray-200 text-gray-600 hover:border-gray-300"
               }`}
@@ -136,9 +185,9 @@ export function CreateGroupDialog({
             </button>
             <button
               type="button"
-              onClick={() => setGroupType("public")}
+              onClick={() => setVisibility("public")}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-sm border transition-colors ${
-                groupType === "public"
+                visibility === "public"
                   ? "bg-primary-lighter border-primary text-primary"
                   : "bg-white border-gray-200 text-gray-600 hover:border-gray-300"
               }`}
@@ -148,9 +197,9 @@ export function CreateGroupDialog({
             </button>
             <button
               type="button"
-              onClick={() => setGroupType("team")}
+              onClick={() => setVisibility("team")}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-sm border transition-colors ${
-                groupType === "team"
+                visibility === "team"
                   ? "bg-primary-lighter border-primary text-primary"
                   : "bg-white border-gray-200 text-gray-600 hover:border-gray-300"
               }`}

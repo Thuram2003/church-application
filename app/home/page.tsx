@@ -1,8 +1,6 @@
 "use client";
 
 import {
-  Users,
-  House,
   Church,
   HouseLine,
   UsersThree,
@@ -10,20 +8,21 @@ import {
   Wallet,
   Money,
   CreditCard,
-  Repeat, 
+  Repeat,
   ClockCounterClockwise,
-  TrendUp, 
+  TrendUp,
   UserPlus,
   Calendar,
   CalendarBlank,
-  CurrencyDollar,
   Envelope,
   ChatCircle,
   Megaphone,
   FileText,
+  Users,
   UserPlus as InviteIcon,
 } from "@phosphor-icons/react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { StatCard, SummaryCard, MetricBox, ActionButton, MemberItem } from "@/components/dashboard";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
@@ -34,38 +33,64 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { StatCardsSkeleton } from "@/components/ui/skeleton";
 import { CreatePeopleDialog } from "@/components/people/CreatePeopleDialog";
-import { CreateFamilyDialog } from "@/components/people/CreateFamilyDialog";
-import { CreateGroupDialog } from "@/components/people/CreateGroupDialog";
+import { usePeople, useCreatePeopleBulk } from "@/hooks/use-people";
+import { useFamilies } from "@/hooks/use-families";
+import { useGroups } from "@/hooks/use-groups";
+import type { CreatePeoplePersonRequest } from "@/types/people";
 
-// Mock data - replace with real data from your API
-const recentMembers = [
-  { id: 1, name: "Amebe christian", role: "Adult" }
-];
 const upcomingBirthdays: any[] = [];
 const upcomingEvents: any[] = [];
 
 export default function HomePage() {
+  const router = useRouter();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [createFamilyDialogOpen, setCreateFamilyDialogOpen] = useState(false);
-  const [createGroupDialogOpen, setCreateGroupDialogOpen] = useState(false);
 
-  const handleCreatePeople = (people: any[]) => {
-    console.log("Creating people:", people);
-    // API call here
-    // await api.createPeople(people)
-  };
+  // API data
+  const { data: peopleResponse, isLoading: loadingPeople } = usePeople({ limit: 50, offset: 0 });
+  const { data: familiesResponse, isLoading: loadingFamilies } = useFamilies();
+  const { data: groupsResponse, isLoading: loadingGroups } = useGroups();
 
-  const handleCreateFamily = (family: any) => {
-    console.log("Creating family:", family);
-    // API call here
-    // await api.createFamily(family)
-  };
+  const createPeopleMutation = useCreatePeopleBulk();
 
-  const handleCreateGroup = (group: any) => {
-    console.log("Creating group:", group);
-    // API call here
-    // await api.createGroup(group)
+  const isLoading = loadingPeople || loadingFamilies || loadingGroups;
+
+  // Counts
+  const allPeople = useMemo(() => {
+    const items = peopleResponse?.data?.items ?? [];
+    return items.filter((p: any) => !p.archivedAt);
+  }, [peopleResponse]);
+
+  const totalPeople = allPeople.length;
+
+  const totalFamilies = useMemo(() => {
+    const data = familiesResponse?.data as any;
+    if (!data) return 0;
+    const items = data.items ?? (Array.isArray(data) ? data : []);
+    return items.filter((f: any) => !f.archivedAt).length;
+  }, [familiesResponse]);
+
+  const totalGroups = useMemo(() => {
+    const data = groupsResponse?.data as any;
+    if (!data) return 0;
+    const items = Array.isArray(data) ? data : (data.items ?? []);
+    return items.length;
+  }, [groupsResponse]);
+
+  // Recently added — last 5 by createdAt
+  const recentMembers = useMemo(() => {
+    return [...allPeople]
+      .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 4);
+  }, [allPeople]);
+
+  // Handlers
+  const handleCreatePeople = async (people: CreatePeoplePersonRequest[]) => {
+    try {
+      await createPeopleMutation.mutateAsync({ people, defaultRole: "member" });
+      setCreateDialogOpen(false);
+    } catch {}
   };
 
   return (
@@ -77,49 +102,68 @@ export default function HomePage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={Users} label="Members" value="3" onAdd={() => setCreateDialogOpen(true)} />
-        <StatCard icon={HouseLine} label="Families" value="4" onAdd={() => setCreateFamilyDialogOpen(true)} />
-        <StatCard icon={UsersThree} label="Groups" value="10" onAdd={() => setCreateGroupDialogOpen(true)} />
-        <StatCard icon={Coins} label="Funds" count={1} />
-      </div>
+      {isLoading ? (
+        <StatCardsSkeleton count={4} />
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard
+            icon={Users}
+            label="Members"
+            value={totalPeople.toString()}
+            onAdd={() => router.push("/people")}
+          />
+          <StatCard
+            icon={HouseLine}
+            label="Families"
+            value={totalFamilies.toString()}
+            onAdd={() => router.push("/families")}
+          />
+          <StatCard
+            icon={UsersThree}
+            label="Groups"
+            value={totalGroups.toString()}
+            onAdd={() => router.push("/groups")}
+          />
+          <StatCard icon={Coins} label="Funds" count={0} />
+        </div>
+      )}
 
       {/* Summary Cards Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <SummaryCard
           title="Recently Added Members"
           emptyIcon={UserPlus}
-          emptyText="No people added"
+          emptyText="No people added yet"
           hasData={recentMembers.length > 0}
-          onSeeAll={() => console.log("See all members")}
+          onSeeAll={() => router.push("/people")}
         >
           <div className="space-y-2">
-            {recentMembers.map((member) => (
+            {recentMembers.map((member: any) => (
               <MemberItem
                 key={member.id}
                 id={member.id}
-                name={member.name}
-                role={member.role}
-                onView={() => console.log("View", member.name)}
-                onEdit={() => console.log("Edit", member.name)}
-                onDelete={() => console.log("Delete", member.name)}
+                name={member.user?.name ?? member.userId}
+                role={member.ageGroup ?? member.role}
+                onView={() => router.push("/people")}
               />
             ))}
           </div>
         </SummaryCard>
+
         <SummaryCard
           title="Upcoming Birthdays"
           emptyIcon={Calendar}
-          emptyText="No Birthdays found"
+          emptyText="No birthdays found"
           hasData={upcomingBirthdays.length > 0}
-          onSeeAll={() => console.log("See all birthdays")}
+          onSeeAll={() => router.push("/people")}
         />
+
         <SummaryCard
           title="Upcoming Events"
           emptyIcon={CalendarBlank}
           emptyText="No upcoming events"
           hasData={upcomingEvents.length > 0}
-          onSeeAll={() => console.log("See all events")}
+          onSeeAll={() => router.push("/calendar")}
         />
       </div>
 
@@ -129,9 +173,7 @@ export default function HomePage() {
           <div className="flex items-center justify-between">
             <h2 className="text-base font-semibold text-gray-900">Giving Overview</h2>
             <div className="flex items-center gap-3">
-              <Button size="sm">
-                Connect to Stripe
-              </Button>
+              <Button size="sm">Connect to Stripe</Button>
               <Select defaultValue="all-time">
                 <SelectTrigger size="sm" className="w-[140px]">
                   <SelectValue placeholder="Select period" />
@@ -150,12 +192,12 @@ export default function HomePage() {
         </CardHeader>
         <CardContent className="p-5 pt-0">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            <MetricBox icon={Wallet} label="Total Giving" value="XAF 4000" />
-            <MetricBox icon={Money} label="In-Person Giving" value="XAF 2500" />
-            <MetricBox icon={CreditCard} label="Online Giving" value="XAF 1000" />
-            <MetricBox icon={Repeat} label="Recurring Giving" value="XAF 500" />
-            <MetricBox icon={ClockCounterClockwise} label="Last Donation" value="XAF 200" />
-            <MetricBox icon={TrendUp} label="Highest Donation" value="XAF 10,000" />
+            <MetricBox icon={Wallet} label="Total Giving" value="XAF 0" />
+            <MetricBox icon={Money} label="In-Person Giving" value="XAF 0" />
+            <MetricBox icon={CreditCard} label="Online Giving" value="XAF 0" />
+            <MetricBox icon={Repeat} label="Recurring Giving" value="XAF 0" />
+            <MetricBox icon={ClockCounterClockwise} label="Last Donation" value="—" />
+            <MetricBox icon={TrendUp} label="Highest Donation" value="—" />
           </div>
         </CardContent>
       </Card>
@@ -177,25 +219,12 @@ export default function HomePage() {
         </CardContent>
       </Card>
 
-      {/* Create People Dialog */}
+      {/* Dialogs */}
       <CreatePeopleDialog
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
         onSubmit={handleCreatePeople}
-      />
-
-      {/* Create Family Dialog */}
-      <CreateFamilyDialog
-        open={createFamilyDialogOpen}
-        onOpenChange={setCreateFamilyDialogOpen}
-        onSubmit={handleCreateFamily}
-      />
-
-      {/* Create Group Dialog */}
-      <CreateGroupDialog
-        open={createGroupDialogOpen}
-        onOpenChange={setCreateGroupDialogOpen}
-        onSubmit={handleCreateGroup}
+        isLoading={createPeopleMutation.isPending}
       />
     </div>
   );

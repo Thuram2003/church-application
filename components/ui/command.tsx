@@ -21,7 +21,7 @@ function Command({
     <CommandPrimitive
       data-slot="command"
       className={cn(
-        "bg-popover text-popover-foreground flex h-full w-full flex-col overflow-hidden rounded-md border border-[#EEEEEE]",
+        "bg-popover text-popover-foreground flex h-full w-full flex-col overflow-hidden rounded-md border border-gray-200",
         className
       )}
       {...props}
@@ -67,7 +67,7 @@ function CommandInput({
   return (
     <div
       data-slot="command-input-wrapper"
-      className="flex h-9 items-center gap-2 border-b px-3"
+      className="flex h-9 items-center gap-2 border-b border-gray-200 px-3"
     >
       <MagnifyingGlass className="size-4 shrink-0 opacity-50" />
       <CommandPrimitive.Input

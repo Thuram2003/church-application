@@ -1,12 +1,7 @@
-"use client";
-
+import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { QueryProvider } from "@/components/providers/query-provider";
-import { AuthProvider } from "@/components/providers/auth-provider";
-import { SessionProvider } from "@/components/providers/session-provider";
-import { Toaster } from "sonner";
-import { LayoutContent } from "../components/LayoutContent";
+import { Providers } from "./providers";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -14,29 +9,24 @@ const inter = Inter({
   weight: ["400", "500", "600", "700"],
 });
 
+export const metadata: Metadata = {
+  title: "Movementz - Church Management System",
+  description:
+    "Comprehensive church management platform for member tracking, giving, events, and more",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${inter.variable} h-full antialiased`}
-    >
-      <head>
-        <title>Movementz - Church Management System</title>
-        <meta name="description" content="Comprehensive church management platform for member tracking, giving, events, and more" />
-      </head>
-      <body className="min-h-full flex flex-col font-sans" suppressHydrationWarning>
-        <SessionProvider>
-          <QueryProvider>
-            <AuthProvider>
-              <LayoutContent>{children}</LayoutContent>
-              <Toaster position="top-right" richColors />
-            </AuthProvider>
-          </QueryProvider>
-        </SessionProvider>
+    <html lang="en" className={`${inter.variable} h-full antialiased`}>
+      <body
+        className="min-h-full flex flex-col font-sans"
+        suppressHydrationWarning
+      >
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

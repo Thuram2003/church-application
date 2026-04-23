@@ -8,6 +8,7 @@ import type {
   ChangePasswordRequest,
   UpdateUserRequest,
   SessionResponse,
+  User,
 } from "@/types/auth";
 
 // Query keys
@@ -24,6 +25,27 @@ export function useSession() {
     retry: false,
     enabled: typeof window !== 'undefined', // Only run on client side
   });
+}
+
+// Main auth hook that provides user and authentication state
+export function useAuth() {
+  const { data: sessionData, isLoading, error } = useSession();
+  
+  // For now, we'll use a mock church ID since the workspace system needs to be integrated
+  // In a real implementation, this would come from the workspace context or session
+  const mockChurchId = "550e8400-e29b-41d4-a716-446655440000"; // UUID format
+  
+  return {
+    user: sessionData?.user ? {
+      ...sessionData.user,
+      churchId: mockChurchId, // Add churchId to user object
+    } : undefined,
+    session: sessionData?.session,
+    isLoading,
+    isAuthenticated: !!sessionData?.user,
+    error,
+    churchId: sessionData?.user ? mockChurchId : undefined,
+  };
 }
 
 // Sign up mutation

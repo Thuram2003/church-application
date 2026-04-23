@@ -19,3 +19,8 @@ export interface ApiErrorResponse {
 }
 
 export * from "./form";
+export * from "./bible";
+export * from "./branches";
+export * from "./families";
+export * from "./groups";
+export * from "./people";

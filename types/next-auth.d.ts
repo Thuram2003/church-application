@@ -11,8 +11,10 @@ declare module "next-auth" {
     country?: string;
     emailVerified: boolean;
     image?: string;
-    role: string;
+    role?: string;
     churchId?: string;
+    branchId?: string;
+    memberId?: string;
     accessToken: string;
   }
 
@@ -26,8 +28,10 @@ declare module "next-auth" {
       country?: string;
       emailVerified: boolean;
       image?: string;
-      role: string;
+      role?: string;
       churchId?: string;
+      branchId?: string;
+      memberId?: string;
       accessToken: string;
     };
   }
@@ -43,8 +47,10 @@ declare module "next-auth/jwt" {
     country?: string;
     emailVerified: boolean;
     image?: string;
-    role: string;
+    role?: string;
     churchId?: string;
+    branchId?: string;
+    memberId?: string;
     accessToken: string;
   }
 }

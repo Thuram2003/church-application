@@ -35,6 +35,7 @@ interface DataTableProps<TData, TValue> {
   searchKey?: string;
   searchValue?: string;
   onSelectionChange?: (selectedRows: TData[]) => void;
+  isLoading?: boolean;
 }
 
 export function DataTable<TData, TValue>({
@@ -43,6 +44,7 @@ export function DataTable<TData, TValue>({
   searchKey,
   searchValue,
   onSelectionChange,
+  isLoading,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
@@ -82,7 +84,7 @@ export function DataTable<TData, TValue>({
       const selectedRows = table.getFilteredSelectedRowModel().rows.map(row => row.original);
       onSelectionChange(selectedRows);
     }
-  }, [rowSelection, onSelectionChange, table]);
+  }, [rowSelection, onSelectionChange]);
 
   return (
     <div className="space-y-4">
@@ -104,7 +106,13 @@ export function DataTable<TData, TValue>({
           ))}
         </TableHeader>
         <TableBody>
-          {table.getRowModel().rows?.length ? (
+          {isLoading ? (
+            <TableRow>
+              <TableCell colSpan={columns.length} className="h-24 text-center">
+                Loading...
+              </TableCell>
+            </TableRow>
+          ) : table.getRowModel().rows?.length ? (
             table.getRowModel().rows.map((row: Row<TData>) => (
               <TableRow key={row.id}>
                 {row.getVisibleCells().map((cell: Cell<TData, unknown>) => (

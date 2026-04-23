@@ -43,10 +43,9 @@ export const authOptions: NextAuthOptions = {
             throw new Error("EMAIL_NOT_VERIFIED");
           }
 
+          const accessToken = data.session?.token || data.token;
+
           // Return user object with session token
-          // Better Auth returns the session token in the response
-          // Note: role and churchId are NOT in the user table, they come from the member table
-          // These will be null initially and should be fetched/updated after login
           return {
             id: data.user.id,
             email: data.user.email,
@@ -56,9 +55,12 @@ export const authOptions: NextAuthOptions = {
             country: data.user.country,
             emailVerified: data.user.emailVerified,
             image: data.user.image,
-            role: "member", // Default role - will be updated from member table
-            churchId: undefined, // Will be set after onboarding or from member table
-            accessToken: data.session?.token || data.token, // Better Auth session token
+            accessToken: accessToken,
+            // Workspace context - will be set after workspace selection
+            role: undefined,
+            churchId: undefined,
+            branchId: undefined,
+            memberId: undefined,
           };
         } catch (error: any) {
           console.error("[NextAuth] Authorization error:", error);
@@ -92,14 +94,43 @@ export const authOptions: NextAuthOptions = {
         token.country = user.country;
         token.emailVerified = user.emailVerified as boolean;
         token.image = user.image;
+        token.accessToken = user.accessToken;
+        // Workspace context
         token.role = user.role;
         token.churchId = user.churchId;
-        token.accessToken = user.accessToken;
+        token.branchId = user.branchId;
+        token.memberId = user.memberId;
+        // Set token expiry based on Better Auth defaults
+        // 7 days for normal login, 30 days if "remember me" was checked
+        // We'll default to 7 days here; Better Auth handles the actual expiration
+        token.accessTokenExpires = Date.now() + 7 * 24 * 60 * 60 * 1000;
       }
 
       // Handle session updates
       if (trigger === "update" && session) {
         token = { ...token, ...session };
+      }
+
+      // Check if token is expired and needs refresh
+      if (token.accessTokenExpires && Date.now() > (token.accessTokenExpires as number)) {
+        console.log('[NextAuth] Access token expired, attempting refresh...');
+        try {
+          // Call Better Auth refresh endpoint
+          const response = await axios.post(`${BACKEND_AUTH_URL}/refresh`, {}, {
+            headers: {
+              'Authorization': `Bearer ${token.accessToken}`,
+            },
+          });
+
+          if (response.data?.token) {
+            token.accessToken = response.data.token;
+            token.accessTokenExpires = Date.now() + 7 * 24 * 60 * 60 * 1000;
+            console.log('[NextAuth] Token refreshed successfully');
+          }
+        } catch (error) {
+          console.error('[NextAuth] Token refresh failed:', error);
+          // Return token as-is, let the API call fail and trigger logout
+        }
       }
 
       return token;
@@ -116,9 +147,12 @@ export const authOptions: NextAuthOptions = {
           country: token.country as string,
           emailVerified: token.emailVerified as boolean,
           image: token.image as string,
+          accessToken: token.accessToken as string,
+          // Workspace context
           role: token.role as string,
           churchId: token.churchId as string,
-          accessToken: token.accessToken as string,
+          branchId: token.branchId as string,
+          memberId: token.memberId as string,
         };
       }
 

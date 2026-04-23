@@ -1,11 +1,10 @@
 "use client";
 
-import { Gear, Church, ListPlus, Phone, MapPin } from "@phosphor-icons/react";
+import { Gear, Church, ListPlus, MapPin } from "@phosphor-icons/react";
 import { useState } from "react";
 import { TabNavigation, TabItem } from "@/components/TabNavigation";
 import {
   ChurchDetailsTab,
-  ContactDetailsTab,
   ExtraFieldsTab,
   DefaultsTab,
   BranchesTab,
@@ -20,12 +19,6 @@ export default function ChurchSettingsPage() {
       label: "Church details",
       icon: <Church className="w-4 h-4" />,
       content: <ChurchDetailsTab />,
-    },
-    {
-      value: "contact-details",
-      label: "Contact details",
-      icon: <Phone className="w-4 h-4" />,
-      content: <ContactDetailsTab />,
     },
     {
       value: "branches",

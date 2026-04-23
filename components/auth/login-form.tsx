@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { signIn, getSession } from "next-auth/react";
+import { signIn } from "next-auth/react";
 import {
   Form,
   FormControl,
@@ -47,8 +47,59 @@ export const LoginForm = () => {
     setIsPending(true);
 
     try {
-      console.log('[Login Form] Attempting login with NextAuth...');
+      console.log('[Login Form] Step 1: Calling Better Auth directly to set session cookie...');
+      
+      // Step 1: Call Better Auth directly from the client to set the session cookie
+      const betterAuthResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_AUTH_URL}/sign-in/email`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include', // Important: This ensures cookies are set
+          body: JSON.stringify({
+            email: values.email,
+            password: values.password,
+            rememberMe: values.rememberMe,
+          }),
+        }
+      );
 
+      if (!betterAuthResponse.ok) {
+        const errorData = await betterAuthResponse.json();
+        console.error('[Login Form] Better Auth login failed:', errorData);
+        
+        // Check if email is not verified
+        if (errorData.code === "EMAIL_NOT_VERIFIED" || errorData.message?.includes("verify") || errorData.message?.includes("not verified")) {
+          toast.error("Email not verified", {
+            description: "Please verify your email before signing in.",
+          });
+          router.push(`/verify-email?email=${encodeURIComponent(values.email)}`);
+          return;
+        }
+        
+        toast.error("Login failed", {
+          description: errorData.message || "Invalid email or password",
+        });
+        return;
+      }
+
+      const betterAuthData = await betterAuthResponse.json();
+      console.log('[Login Form] Better Auth login successful, cookie should be set');
+      console.log('[Login Form] Better Auth response:', betterAuthData);
+
+      // Check if email is verified
+      if (!betterAuthData.user?.emailVerified) {
+        toast.error("Email not verified", {
+          description: "Please verify your email before signing in.",
+        });
+        router.push(`/verify-email?email=${encodeURIComponent(values.email)}`);
+        return;
+      }
+
+      // Step 2: Now call NextAuth to sync the session
+      console.log('[Login Form] Step 2: Syncing with NextAuth...');
       const result = await signIn("credentials", {
         email: values.email,
         password: values.password,
@@ -59,46 +110,22 @@ export const LoginForm = () => {
       console.log('[Login Form] NextAuth result:', result);
 
       if (result?.error) {
-        console.error('[Login Form] Login failed:', result.error);
-        
-        // Check if email is not verified
-        if (result.error === "EMAIL_NOT_VERIFIED") {
-          toast.error("Email not verified", {
-            description: "Please verify your email before signing in.",
-          });
-          // Redirect to verify-email page
-          router.push(`/verify-email?email=${encodeURIComponent(values.email)}`);
-          return;
-        }
-        
+        console.error('[Login Form] NextAuth sync failed:', result.error);
         toast.error("Login failed", {
-          description: result.error || "Invalid email or password",
+          description: result.error || "Failed to sync session",
         });
         return;
       }
 
       if (result?.ok) {
-        console.log('[Login Form] Login successful, checking church...');
+        console.log('[Login Form] Login successful, redirecting to workspace selection');
         
-        // Get the session to check churchId
-        const session = await getSession();
+        toast.success("Welcome back!", {
+          description: "Loading your workspaces...",
+        });
         
-        if (!session?.user?.churchId) {
-          // User has no church, redirect to onboarding
-          console.log('[Login Form] No church found, redirecting to onboarding');
-          toast.success("Welcome!", {
-            description: "Let's set up your church.",
-          });
-          router.push("/onboarding");
-        } else {
-          // User has organization, redirect to home
-          console.log('[Login Form] Organization found, redirecting to home');
-          toast.success("Welcome back!", {
-            description: "You have successfully signed in.",
-          });
-          router.push("/home");
-        }
-        
+        // Redirect to workspace selection
+        router.push("/workspace-selection");
         router.refresh();
       }
     } catch (error: any) {

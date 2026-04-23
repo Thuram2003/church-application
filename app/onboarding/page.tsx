@@ -25,33 +25,68 @@ export default function OnboardingPage() {
     branch: null,
   });
 
-  // Redirect if user already has church
-  useEffect(() => {
-    if (status === "authenticated" && session?.user?.churchId) {
-      console.log("[Onboarding] User already has church, redirecting to home");
-      router.push("/home");
-    }
-  }, [status, session, router]);
+  // Allow users to create new churches even if they have existing workspaces
+  // The middleware handles authentication, so we don't need to redirect here
+  // useEffect(() => {
+  //   if (status === "authenticated" && session?.user?.churchId && session?.user?.branchId) {
+  //     console.log("[Onboarding] User already has complete workspace, redirecting to home");
+  //     router.push("/home");
+  //   }
+  // }, [status, session?.user?.churchId, session?.user?.branchId, router]);
 
   const { mutate: createChurch, isPending } = useCreateChurch({
     onSuccess: async (data) => {
       console.log("[Onboarding] Church created successfully:", data);
       
-      toast.success("Church created successfully!", {
-        description: "Welcome to Movementz. Let's get started.",
-      });
+      const churchId = data.church.id;
+      const branchId = data.hqBranch.id;
 
-      // Update the session with the new churchId and role
-      // Backend creates member records with role "overseer" (church-wide) and "admin" (branch-specific)
-      // We'll use "overseer" as the primary role since it's church-wide
-      await update({
-        churchId: data.church.id,
-        role: "overseer", // User becomes overseer of the church they created
-      });
+      try {
+        // Switch to the new workspace
+        console.log("[Onboarding] Switching to new workspace...");
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/users/workspaces/switch`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include', // Send cookies with the request (Better Auth session)
+            body: JSON.stringify({ branchId }),
+          }
+        );
 
-      // Redirect to home
-      router.push("/home");
-      router.refresh();
+        if (!response.ok) {
+          throw new Error("Failed to switch workspace");
+        }
+
+        const result = await response.json();
+        const workspaceData = result.data || result;
+
+        console.log("[Onboarding] Workspace switched:", workspaceData);
+
+        // Update session with workspace context
+        await update({
+          churchId: workspaceData.churchId,
+          branchId: branchId,
+          role: workspaceData.role,
+          memberId: workspaceData.memberId,
+        });
+
+        toast.success("Church created successfully!", {
+          description: "Welcome to Movementz. Let's get started.",
+        });
+
+        // Redirect to home
+        router.push("/home");
+        router.refresh();
+      } catch (error: any) {
+        console.error("[Onboarding] Failed to switch workspace:", error);
+        toast.error("Church created but failed to switch workspace", {
+          description: "Please try again or contact support.",
+        });
+        // Stay on onboarding page - don't redirect
+      }
     },
     onError: (error: any) => {
       console.error("[Onboarding] Failed to create church:", error);

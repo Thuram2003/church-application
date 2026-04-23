@@ -5,10 +5,10 @@ import { getToken } from "next-auth/jwt";
 // Routes that don't require authentication
 const publicRoutes = ["/login", "/register", "/forgot-password", "/reset-password", "/verify-email", "/verify-email-sent"];
 
-// Routes that require authentication but no organization check
-const authOnlyRoutes = ["/onboarding"];
+// Routes that require authentication but no workspace
+const authOnlyRoutes = ["/onboarding", "/workspace-selection"];
 
-// Routes that require authentication AND organization
+// Routes that require authentication AND workspace
 const protectedRoutes = ["/home", "/people", "/giving", "/calendar", "/chat", "/appointments", "/follow-ups", "/resources", "/rooms", "/announcements", "/accounting", "/batches", "/financial-settings", "/funds", "/pledges", "/attendance", "/families", "/groups", "/church-settings", "/devotion", "/forms", "/reports", "/users"];
 
 export async function middleware(request: NextRequest) {
@@ -21,64 +21,78 @@ export async function middleware(request: NextRequest) {
   });
 
   const isAuthenticated = !!token;
-  const hasChurch = !!token?.churchId;
+  const hasWorkspace = !!token?.churchId && !!token?.branchId;
 
   // Check if the route is public
   const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
   
-  // Check if the route requires auth only (no org check)
+  // Check if the route requires auth only (no workspace check)
   const isAuthOnlyRoute = authOnlyRoutes.some((route) => pathname.startsWith(route));
   
-  // Check if the route is protected (requires auth + org)
+  // Check if the route is protected (requires auth + workspace)
   const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route));
 
   // Root path handling
   if (pathname === "/") {
-    if (isAuthenticated) {
-      // Check if user has church
-      if (hasChurch) {
-        return NextResponse.redirect(new URL("/home", request.url));
-      } else {
-        return NextResponse.redirect(new URL("/onboarding", request.url));
-      }
-    } else {
-      // Redirect unauthenticated users to login
+    if (!isAuthenticated) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
+    
+    // Authenticated but no workspace selected
+    if (!hasWorkspace) {
+      return NextResponse.redirect(new URL("/workspace-selection", request.url));
+    }
+    
+    // Has workspace - go to home
+    return NextResponse.redirect(new URL("/home", request.url));
   }
 
-  // Auth-only routes (like onboarding) - require auth but no church
-  if (isAuthOnlyRoute) {
+  // Workspace selection page - requires auth but allows switching
+  if (pathname === "/workspace-selection") {
     if (!isAuthenticated) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("callbackUrl", pathname);
       return NextResponse.redirect(loginUrl);
     }
-    // If user already has church, redirect to home
-    if (hasChurch) {
-      return NextResponse.redirect(new URL("/home", request.url));
-    }
+    // Allow access even if user already has a workspace (for switching)
     return NextResponse.next();
   }
 
-  // Protected routes - require auth AND church
+  // Onboarding - requires auth but no workspace check (user can create new church)
+  if (pathname === "/onboarding") {
+    if (!isAuthenticated) {
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("callbackUrl", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+    // Allow access even if user has workspaces (creating new church)
+    return NextResponse.next();
+  }
+
+  // Protected routes - require auth AND workspace
   if (isProtectedRoute) {
     if (!isAuthenticated) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("callbackUrl", pathname);
       return NextResponse.redirect(loginUrl);
     }
-    // If authenticated but no church, redirect to onboarding
-    if (!hasChurch) {
-      return NextResponse.redirect(new URL("/onboarding", request.url));
+    
+    // No workspace selected
+    if (!hasWorkspace) {
+      return NextResponse.redirect(new URL("/workspace-selection", request.url));
     }
+    
     return NextResponse.next();
   }
 
   // If trying to access public route with session, redirect to home
   // EXCEPT for verify-email which should always be accessible
   if (isPublicRoute && isAuthenticated && !pathname.startsWith("/verify-email")) {
-    return NextResponse.redirect(new URL("/home", request.url));
+    if (hasWorkspace) {
+      return NextResponse.redirect(new URL("/home", request.url));
+    } else {
+      return NextResponse.redirect(new URL("/workspace-selection", request.url));
+    }
   }
 
   return NextResponse.next();

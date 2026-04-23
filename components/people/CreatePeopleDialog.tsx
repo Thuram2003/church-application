@@ -18,36 +18,30 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
-// Person data type
-interface PersonData {
-  fullName: string;
-  email: string;
-  gender: string;
-  ageGroup: string;
-  isVisitor: boolean;
-}
+import { CreatePeoplePersonRequest } from "@/types/people";
 
 // Props for the dialog
 interface CreatePeopleDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (people: PersonData[]) => void;
+  onSubmit: (people: CreatePeoplePersonRequest[]) => void;
+  isLoading?: boolean;
 }
 
 export function CreatePeopleDialog({
   open,
   onOpenChange,
   onSubmit,
+  isLoading = false,
 }: CreatePeopleDialogProps) {
-  // State for multiple people rows
-  const [people, setPeople] = React.useState<PersonData[]>([
+  // State for multiple people rows using the correct type from people.ts
+  const [people, setPeople] = React.useState<CreatePeoplePersonRequest[]>([
     {
-      fullName: "",
+      name: "",
       email: "",
       gender: "Male",
       ageGroup: "Adult",
-      isVisitor: false,
+      visitor: false,
     },
   ]);
 
@@ -56,11 +50,11 @@ export function CreatePeopleDialog({
     setPeople([
       ...people,
       {
-        fullName: "",
+        name: "",
         email: "",
         gender: "Male",
         ageGroup: "Adult",
-        isVisitor: false,
+        visitor: false,
       },
     ]);
   };
@@ -68,7 +62,7 @@ export function CreatePeopleDialog({
   // Update person field
   const updatePerson = (
     index: number,
-    field: keyof PersonData,
+    field: keyof CreatePeoplePersonRequest,
     value: string | boolean
   ) => {
     const updated = [...people];
@@ -87,17 +81,18 @@ export function CreatePeopleDialog({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(people);
-    onOpenChange(false);
-    // Reset form
-    setPeople([
-      {
-        fullName: "",
-        email: "",
-        gender: "Male",
-        ageGroup: "Adult",
-        isVisitor: false,
-      },
-    ]);
+    // Reset form only if not loading (will be reset when dialog closes)
+    if (!isLoading) {
+      setPeople([
+        {
+          name: "",
+          email: "",
+          gender: "Male",
+          ageGroup: "Adult",
+          visitor: false,
+        },
+      ]);
+    }
   };
 
   return (
@@ -128,11 +123,12 @@ export function CreatePeopleDialog({
                   )}
                   <Input
                     placeholder="Full name"
-                    value={person.fullName}
+                    value={person.name}
                     onChange={(e) =>
-                      updatePerson(index, "fullName", e.target.value)
+                      updatePerson(index, "name", e.target.value)
                     }
                     required
+                    disabled={isLoading}
                   />
                 </div>
 
@@ -145,9 +141,10 @@ export function CreatePeopleDialog({
                   )}
                   <Input
                     type="email"
-                    placeholder="Email"
-                    value={person.email}
+                    placeholder="Email (optional)"
+                    value={person.email || ""}
                     onChange={(e) => updatePerson(index, "email", e.target.value)}
+                    disabled={isLoading}
                   />
                 </div>
 
@@ -161,6 +158,7 @@ export function CreatePeopleDialog({
                   <Select
                     value={person.gender}
                     onValueChange={(value) => updatePerson(index, "gender", value)}
+                    disabled={isLoading}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -185,6 +183,7 @@ export function CreatePeopleDialog({
                     onValueChange={(value) =>
                       updatePerson(index, "ageGroup", value)
                     }
+                    disabled={isLoading}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -208,10 +207,11 @@ export function CreatePeopleDialog({
                   <div className="flex items-center h-10">
                     <Checkbox
                       id={`visitor-${index}`}
-                      checked={person.isVisitor}
+                      checked={person.visitor || false}
                       onCheckedChange={(checked) =>
-                        updatePerson(index, "isVisitor", checked as boolean)
+                        updatePerson(index, "visitor", checked as boolean)
                       }
+                      disabled={isLoading}
                     />
                     <label
                       htmlFor={`visitor-${index}`}
@@ -249,7 +249,8 @@ export function CreatePeopleDialog({
           <button
             type="button"
             onClick={addPerson}
-            className="w-full py-2.5 border border-dashed border-gray-300 rounded-sm text-sm text-gray-600 hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-1.5"
+            disabled={isLoading}
+            className="w-full py-2.5 border border-dashed border-gray-300 rounded-sm text-sm text-gray-600 hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Plus className="w-4 h-4" />
             Create more
@@ -259,10 +260,20 @@ export function CreatePeopleDialog({
 
       {/* Footer */}
       <div className="flex items-center justify-end gap-3 px-6 py-4 flex-shrink-0 bg-white border-t border-gray-200">
-        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+        <Button 
+          type="button" 
+          variant="outline" 
+          onClick={() => onOpenChange(false)}
+          disabled={isLoading}
+        >
           Cancel
         </Button>
-        <Button type="submit">Create</Button>
+        <Button 
+          type="submit" 
+          disabled={isLoading}
+        >
+          {isLoading ? 'Creating...' : 'Create'}
+        </Button>
       </div>
     </form>
       </DialogContent>

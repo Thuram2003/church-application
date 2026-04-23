@@ -4,7 +4,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,16 +13,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { DotsThree, ArrowsDownUp } from "@phosphor-icons/react";
 
-export type Group = {
-  id: number;
-  name: string;
+import type { Group, GroupVisibility } from "@/types/groups";
+
+export type GroupTableData = Group & {
   initials: string;
-  type: string;
-  members: number;
-  status: string;
+  memberCount: number;
 };
 
-export const groupsColumns: ColumnDef<Group>[] = [
+export const groupsColumns: ColumnDef<GroupTableData>[] = [
   {
     id: "select",
     header: ({ table }) => (
@@ -49,19 +47,27 @@ export const groupsColumns: ColumnDef<Group>[] = [
     accessorKey: "name",
     header: ({ column }) => {
       return (
-        <div className="flex items-center gap-1">
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="h-auto p-0 font-normal"
+        >
           Group name
-          <ArrowsDownUp className="w-3 h-3" />
-        </div>
+          <ArrowsDownUp className="ml-1 w-3 h-3" />
+        </Button>
       );
     },
     cell: ({ row }) => {
       return (
         <div className="flex items-center gap-3">
           <Avatar className="w-8 h-8">
-            <AvatarFallback className="bg-[#eef0ff] text-[#443a88] font-semibold text-xs">
-              {row.original.initials}
-            </AvatarFallback>
+            {row.original.iconUrl ? (
+              <AvatarImage src={row.original.iconUrl} alt={row.original.name} />
+            ) : (
+              <AvatarFallback className="bg-primary-light text-primary font-semibold text-xs">
+                {row.original.initials}
+              </AvatarFallback>
+            )}
           </Avatar>
           <span className="font-medium text-sm">{row.getValue("name")}</span>
         </div>
@@ -72,62 +78,86 @@ export const groupsColumns: ColumnDef<Group>[] = [
     },
   },
   {
-    accessorKey: "type",
-    header: "Type",
+    accessorKey: "visibility",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="h-auto p-0 font-normal"
+        >
+          Type
+          <ArrowsDownUp className="ml-1 w-3 h-3" />
+        </Button>
+      );
+    },
     cell: ({ row }) => {
-      const type = row.getValue("type") as string;
+      const visibility = row.getValue("visibility") as GroupVisibility;
       return (
         <Badge
           variant="secondary"
           className={
-            type === "Private"
+            visibility === "private"
               ? "bg-orange-50 text-orange-700 border-orange-200"
-              : type === "Public"
+              : visibility === "public"
               ? "bg-blue-50 text-blue-700 border-blue-200"
               : "bg-primary-lighter text-primary-dark border-primary-light"
           }
         >
-          {type}
+          {visibility === "private" ? "Private" : visibility === "public" ? "Public" : "Team"}
         </Badge>
       );
     },
   },
   {
-    accessorKey: "members",
+    accessorKey: "memberCount",
     header: ({ column }) => {
       return (
-        <div className="flex items-center gap-1">
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="h-auto p-0 font-normal"
+        >
           Members
-          <ArrowsDownUp className="w-3 h-3" />
-        </div>
+          <ArrowsDownUp className="ml-1 w-3 h-3" />
+        </Button>
       );
     },
     cell: ({ row }) => {
-      const members = row.getValue("members") as number;
+      const members = row.getValue("memberCount") as number;
       return (
         <span className="text-sm text-gray-600">
-          {members} {members === 1 ? "member" : "members"}
+          {members || 0} {members === 1 ? "member" : "members"}
         </span>
       );
     },
   },
   {
-    accessorKey: "status",
+    accessorKey: "enrollment",
     header: ({ column }) => {
       return (
-        <div className="flex items-center gap-1">
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="h-auto p-0 font-normal"
+        >
           Status
-          <ArrowsDownUp className="w-3 h-3" />
-        </div>
+          <ArrowsDownUp className="ml-1 w-3 h-3" />
+        </Button>
       );
     },
     cell: ({ row }) => {
+      const enrollment = row.getValue("enrollment") as string;
       return (
         <Badge
           variant="secondary"
-          className="bg-green-50 text-green-700 border-green-200"
+          className={
+            enrollment === "open" 
+              ? "bg-green-50 text-green-700 border-green-200"
+              : "bg-gray-50 text-gray-700 border-gray-200"
+          }
         >
-          {row.getValue("status")}
+          {enrollment === "open" ? "Open" : "Closed"}
         </Badge>
       );
     },
