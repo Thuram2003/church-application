@@ -36,9 +36,7 @@ export function SummaryCard({
         </div>
       </CardHeader>
       <CardContent className="p-5 pt-2">
-        {hasData && children ? (
-          children
-        ) : (
+        {children ?? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center mb-3">
               <Icon className="w-6 h-6 text-gray-300" />

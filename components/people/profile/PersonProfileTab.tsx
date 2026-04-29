@@ -1,14 +1,14 @@
 "use client";
 
 import {
-  User,
+  UserCircle,
   PencilSimple,
-  Envelope,
+  EnvelopeSimple,
   Phone,
   MapPin,
-  Calendar,
+  CalendarDots,
   GenderIntersex,
-  Users,
+  UsersThree,
   House,
   IdentificationCard,
   FirstAid,
@@ -25,11 +25,15 @@ import {
   MapTrifold,
   Globe,
   Hash,
+  Check,
+  X,
+  Crown,
 } from "@phosphor-icons/react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Select,
   SelectContent,
@@ -38,61 +42,168 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PhoneInput } from "@/components/ui/phone-input";
-import { CountrySelector, StateSelector, CitySelector } from "@/components/ui/location-selector";
-import { FormSkeleton } from "@/components/ui/skeleton";
+import {
+  CountrySelector,
+  StateSelector,
+  CitySelector,
+} from "@/components/ui/location-selector";
+import { Skeleton } from "@/components/ui/skeleton";
 import { usePerson } from "@/hooks/use-people";
+import { useFamily } from "@/hooks/use-families";
 import type { ICountry, IState, ICity } from "country-state-city";
 
 interface PersonProfileTabProps {
   personId: string;
 }
 
+// ── Reusable field row ──────────────────────────────────────────────────────
+function FieldRow({
+  icon: Icon,
+  label,
+  value,
+  editing,
+  children,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value?: string | null;
+  editing?: boolean;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start gap-3 py-2.5 border-b border-gray-50 last:border-0">
+      <div className="flex items-center gap-1.5 w-28 flex-shrink-0 pt-0.5">
+        <Icon className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+        <span className="text-xs text-gray-500">{label}</span>
+      </div>
+      <div className="flex-1 min-w-0">
+        {editing && children ? (
+          children
+        ) : (
+          <p className="text-sm text-gray-900">{value || "—"}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Section card ────────────────────────────────────────────────────────────
+function Section({
+  icon: Icon,
+  title,
+  sectionKey,
+  editingSection,
+  onEdit,
+  onSave,
+  onCancel,
+  children,
+}: {
+  icon: React.ElementType;
+  title: string;
+  sectionKey: string;
+  editingSection: string | null;
+  onEdit: (key: string) => void;
+  onSave: () => void;
+  onCancel: () => void;
+  children: React.ReactNode;
+}) {
+  const isEditing = editingSection === sectionKey;
+  return (
+    <div className="bg-white border border-gray-100 rounded-xl overflow-hidden break-inside-avoid mb-4">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50/60">
+        <div className="flex items-center gap-2">
+          <Icon className="w-4 h-4 text-primary" />
+          <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
+        </div>
+        {isEditing ? (
+          <div className="flex items-center gap-1">
+            <Button size="sm" onClick={onSave} className="h-7 px-3 text-xs gap-1">
+              <Check className="w-3 h-3" />
+              Save
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onCancel}
+              className="h-7 px-2 text-xs"
+            >
+              <X className="w-3 h-3" />
+            </Button>
+          </div>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onEdit(sectionKey)}
+            className="h-7 px-2 text-xs gap-1 text-gray-400 hover:text-gray-900"
+          >
+            <PencilSimple className="w-3.5 h-3.5" />
+            Edit
+          </Button>
+        )}
+      </div>
+      <div className="px-4 py-1">{children}</div>
+    </div>
+  );
+}
+
+// ── Skeleton section ────────────────────────────────────────────────────────
+function SectionSkeleton({ rows = 3 }: { rows?: number }) {
+  return (
+    <div className="bg-white border border-gray-100 rounded-xl overflow-hidden break-inside-avoid mb-4">
+      <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/60">
+        <Skeleton className="h-4 w-32" />
+      </div>
+      <div className="px-4 py-2 space-y-3">
+        {Array.from({ length: rows }).map((_, i) => (
+          <div key={i} className="flex items-center gap-3 py-1">
+            <Skeleton className="h-3 w-24 flex-shrink-0" />
+            <Skeleton className="h-3 flex-1" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Main component ──────────────────────────────────────────────────────────
 export function PersonProfileTab({ personId }: PersonProfileTabProps) {
   const [editingSection, setEditingSection] = useState<string | null>(null);
+
   const { data: response, isLoading } = usePerson(personId);
   const person = response?.data;
 
-  // Location state
-  const [phoneNumber, setPhoneNumber] = useState<string>("");
-  const [emergencyPhone, setEmergencyPhone] = useState<string>("");
+  // Family — fetched from DB when person has a familyId
+  const { data: familyResponse, isLoading: loadingFamily } = useFamily(
+    person?.familyId ?? ""
+  );
+  const family = familyResponse?.data;
+
+  // Local form state
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [selectedCountry, setSelectedCountry] = useState<ICountry | null>(null);
   const [selectedState, setSelectedState] = useState<IState | null>(null);
   const [selectedCity, setSelectedCity] = useState<ICity | null>(null);
 
-  const handleEditStart = (section: string) => {
-    setEditingSection(section);
-  };
+  const handleSave = () => setEditingSection(null);
+  const handleCancel = () => setEditingSection(null);
 
-  const handleSave = () => {
-    // TODO: Implement save logic
-    setEditingSection(null);
-  };
-
-  const handleCancel = () => {
-    setEditingSection(null);
-  };
-
+  // ── Loading state ──
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 py-6">
-        <div className="space-y-6">
-          <FormSkeleton fields={3} />
-          <FormSkeleton fields={3} />
-        </div>
-        <div className="space-y-6">
-          <FormSkeleton fields={3} />
-          <FormSkeleton fields={2} />
-        </div>
-        <div className="space-y-6">
-          <FormSkeleton fields={3} />
-        </div>
+      <div className="py-4" style={{ columns: "2", columnGap: "1rem" }}>
+        <SectionSkeleton rows={4} />
+        <SectionSkeleton rows={7} />
+        <SectionSkeleton rows={6} />
+        <SectionSkeleton rows={4} />
+        <SectionSkeleton rows={3} />
       </div>
     );
   }
 
   if (!person) {
     return (
-      <div className="py-12 text-center">
+      <div className="py-16 text-center">
         <p className="text-gray-500">Person not found</p>
       </div>
     );
@@ -103,643 +214,254 @@ export function PersonProfileTab({ personId }: PersonProfileTabProps) {
   const isEditingContact = editingSection === "contact";
   const isEditingAdditional = editingSection === "additional";
   const isEditingHealth = editingSection === "health";
-  const isEditingFamily = editingSection === "family";
 
   return (
-    <div className="py-6">
-      {/* Three Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Column 1 */}
-        <div className="space-y-6">
-          {/* Personal Details Section */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-gray-200">
-              <div className="flex items-center gap-2">
-                <User className="w-4 h-4 text-primary" />
-                <h3 className="text-sm font-semibold text-gray-900">
-                  Personal details
-                </h3>
-              </div>
-              {!isEditingPersonal && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleEditStart("personal")}
-                  className="h-7 px-2"
-                >
-                  <PencilSimple className="w-3.5 h-3.5" />
-                </Button>
-              )}
-            </div>
+    <div className="py-4">
+      {/*
+        Two explicit flex columns so Family is guaranteed in the shorter column.
+        Column 1: Personal + Additional + Family
+        Column 2: Contact + Health
+      */}
+      <div className="flex gap-4 items-start">
 
-            <div className="space-y-3">
-              {/* Full Name */}
-              <div className="grid grid-cols-[100px_1fr] gap-3 items-start">
-                <div className="pt-2 flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-xs text-gray-600">Full name</span>
-                </div>
-                <div>
-                  {isEditingPersonal ? (
-                    <Input defaultValue={name} className="h-9 text-sm" />
-                  ) : (
-                    <p className="text-sm text-gray-900 py-2">{name}</p>
-                  )}
-                </div>
-              </div>
+        {/* ── Column 1 ── */}
+        <div className="flex-1 min-w-0 space-y-4">
 
-              {/* Gender */}
-              <div className="grid grid-cols-[100px_1fr] gap-3 items-start">
-                <div className="pt-2 flex items-center gap-1.5">
-                  <GenderIntersex className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-xs text-gray-600">Gender</span>
-                </div>
-                <div>
-                  {isEditingPersonal ? (
-                    <Select defaultValue={person.gender}>
-                      <SelectTrigger className="h-9 text-sm">
-                        <SelectValue placeholder="Select" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Male">Male</SelectItem>
-                        <SelectItem value="Female">Female</SelectItem>
-                        <SelectItem value="Other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <p className="text-sm text-gray-900 py-2">{person.gender}</p>
-                  )}
-                </div>
-              </div>
+          {/* Personal details */}
+          <Section
+            icon={UserCircle}
+            title="Personal details"
+            sectionKey="personal"
+            editingSection={editingSection}
+            onEdit={setEditingSection}
+            onSave={handleSave}
+            onCancel={handleCancel}
+          >
+            <FieldRow icon={UserCircle} label="Full name" value={name} editing={isEditingPersonal}>
+              <Input defaultValue={name} className="h-8 text-sm" />
+            </FieldRow>
+            <FieldRow icon={GenderIntersex} label="Gender" value={person.gender} editing={isEditingPersonal}>
+              <Select defaultValue={person.gender}>
+                <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Male">Male</SelectItem>
+                  <SelectItem value="Female">Female</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </FieldRow>
+            <FieldRow icon={Cake} label="Birthday" value={null} editing={isEditingPersonal}>
+              <Input type="date" className="h-8 text-sm" />
+            </FieldRow>
+            <FieldRow icon={UsersThree} label="Age group" value={person.ageGroup} editing={isEditingPersonal}>
+              <Select defaultValue={person.ageGroup ?? undefined}>
+                <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Child">Child</SelectItem>
+                  <SelectItem value="Youth">Youth</SelectItem>
+                  <SelectItem value="Adult">Adult</SelectItem>
+                  <SelectItem value="Senior">Senior</SelectItem>
+                </SelectContent>
+              </Select>
+            </FieldRow>
+          </Section>
 
-              {/* Birthday */}
-              <div className="grid grid-cols-[100px_1fr] gap-3 items-start">
-                <div className="pt-2 flex items-center gap-1.5">
-                  <Cake className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-xs text-gray-600">Birthday</span>
-                </div>
-                <div>
-                  {isEditingPersonal ? (
-                    <Input type="date" className="h-9 text-sm" />
-                  ) : (
-                    <p className="text-sm text-gray-900 py-2">—</p>
-                  )}
-                </div>
-              </div>
+          {/* Additional details */}
+          <Section
+            icon={IdentificationCard}
+            title="Additional details"
+            sectionKey="additional"
+            editingSection={editingSection}
+            onEdit={setEditingSection}
+            onSave={handleSave}
+            onCancel={handleCancel}
+          >
+            <FieldRow icon={Briefcase} label="Occupation" value={null} editing={isEditingAdditional}>
+              <Input className="h-8 text-sm" />
+            </FieldRow>
+            <FieldRow icon={GraduationCap} label="Education" value={null} editing={isEditingAdditional}>
+              <Input className="h-8 text-sm" />
+            </FieldRow>
+            <FieldRow icon={Translate} label="Language" value={null} editing={isEditingAdditional}>
+              <Input className="h-8 text-sm" />
+            </FieldRow>
+            <FieldRow icon={Heart} label="Marital status" value={null} editing={isEditingAdditional}>
+              <Select>
+                <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Single">Single</SelectItem>
+                  <SelectItem value="Married">Married</SelectItem>
+                  <SelectItem value="Divorced">Divorced</SelectItem>
+                  <SelectItem value="Widowed">Widowed</SelectItem>
+                </SelectContent>
+              </Select>
+            </FieldRow>
+            <FieldRow icon={CalendarDots} label="Baptized" value={null} editing={isEditingAdditional}>
+              <Input type="date" className="h-8 text-sm" />
+            </FieldRow>
+            <FieldRow
+              icon={CalendarDots}
+              label="Joined"
+              value={new Date(person.createdAt).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
+            />
+          </Section>
 
-              {/* Age Group */}
-              <div className="grid grid-cols-[100px_1fr] gap-3 items-start">
-                <div className="pt-2 flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-xs text-gray-600">Age group</span>
-                </div>
-                <div>
-                  {isEditingPersonal ? (
-                    <Select defaultValue={person.ageGroup}>
-                      <SelectTrigger className="h-9 text-sm">
-                        <SelectValue placeholder="Select" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Child">Child</SelectItem>
-                        <SelectItem value="Youth">Youth</SelectItem>
-                        <SelectItem value="Adult">Adult</SelectItem>
-                        <SelectItem value="Senior">Senior</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <p className="text-sm text-gray-900 py-2">
-                      {person.ageGroup || "—"}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {isEditingPersonal && (
-              <div className="flex gap-2 pt-2">
-                <Button onClick={handleSave} size="sm" className="h-8 text-xs">
-                  Save
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleCancel} className="h-8 text-xs">
-                  Cancel
-                </Button>
-              </div>
-            )}
-          </div>
-
-          {/* Contact Details Section */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-gray-200">
-              <div className="flex items-center gap-2">
-                <Envelope className="w-4 h-4 text-primary" />
-                <h3 className="text-sm font-semibold text-gray-900">
-                  Contact details
-                </h3>
-              </div>
-              {!isEditingContact && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleEditStart("contact")}
-                  className="h-7 px-2"
-                >
-                  <PencilSimple className="w-3.5 h-3.5" />
-                </Button>
-              )}
-            </div>
-
-            <div className="space-y-3">
-              {/* Email */}
-              <div className="grid grid-cols-[100px_1fr] gap-3 items-start">
-                <div className="pt-2 flex items-center gap-1.5">
-                  <Envelope className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-xs text-gray-600">Email</span>
-                </div>
-                <div>
-                  {isEditingContact ? (
-                    <Input
-                      type="email"
-                      defaultValue={person.user?.email}
-                      className="h-9 text-sm"
-                    />
-                  ) : (
-                    <p className="text-sm text-gray-900 py-2">
-                      {person.user?.email || "—"}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Phone */}
-              <div className="grid grid-cols-[100px_1fr] gap-3 items-start">
-                <div className="pt-2 flex items-center gap-1.5">
-                  <Phone className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-xs text-gray-600">Phone</span>
-                </div>
-                <div>
-                  {isEditingContact ? (
-                    <PhoneInput
-                      value={phoneNumber}
-                      onChange={(value) => setPhoneNumber((value as string) || "")}
-                      defaultCountry="CM"
-                      className="h-9"
-                    />
-                  ) : (
-                    <p className="text-sm text-gray-900 py-2">{phoneNumber || "—"}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Address */}
-              <div className="grid grid-cols-[100px_1fr] gap-3 items-start">
-                <div className="pt-2 flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-xs text-gray-600">Address</span>
-                </div>
-                <div>
-                  {isEditingContact ? (
-                    <Input className="h-9 text-sm" />
-                  ) : (
-                    <p className="text-sm text-gray-900 py-2">—</p>
-                  )}
-                </div>
-              </div>
-
-              {/* City */}
-              <div className="grid grid-cols-[100px_1fr] gap-3 items-start">
-                <div className="pt-2 flex items-center gap-1.5">
-                  <Buildings className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-xs text-gray-600">City</span>
-                </div>
-                <div>
-                  {isEditingContact ? (
-                    <CitySelector
-                      countryCode={selectedCountry?.isoCode}
-                      stateCode={selectedState?.isoCode}
-                      value={selectedCity?.name}
-                      onChange={setSelectedCity}
-                      className="h-9"
-                    />
-                  ) : (
-                    <p className="text-sm text-gray-900 py-2">{selectedCity?.name || "—"}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* State */}
-              <div className="grid grid-cols-[100px_1fr] gap-3 items-start">
-                <div className="pt-2 flex items-center gap-1.5">
-                  <MapTrifold className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-xs text-gray-600">State</span>
-                </div>
-                <div>
-                  {isEditingContact ? (
-                    <StateSelector
-                      countryCode={selectedCountry?.isoCode}
-                      value={selectedState?.name}
-                      onChange={(state) => {
-                        setSelectedState(state);
-                        setSelectedCity(null); // Reset city when state changes
-                      }}
-                      className="h-9"
-                    />
-                  ) : (
-                    <p className="text-sm text-gray-900 py-2">{selectedState?.name || "—"}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Country */}
-              <div className="grid grid-cols-[100px_1fr] gap-3 items-start">
-                <div className="pt-2 flex items-center gap-1.5">
-                  <Globe className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-xs text-gray-600">Country</span>
-                </div>
-                <div>
-                  {isEditingContact ? (
-                    <CountrySelector
-                      value={selectedCountry?.name}
-                      onChange={(country) => {
-                        setSelectedCountry(country);
-                        setSelectedState(null); // Reset state when country changes
-                        setSelectedCity(null); // Reset city when country changes
-                      }}
-                      className="h-9"
-                    />
-                  ) : (
-                    <p className="text-sm text-gray-900 py-2">{selectedCountry?.name || "—"}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Zip code */}
-              <div className="grid grid-cols-[100px_1fr] gap-3 items-start">
-                <div className="pt-2 flex items-center gap-1.5">
-                  <Hash className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-xs text-gray-600">Zip code</span>
-                </div>
-                <div>
-                  {isEditingContact ? (
-                    <Input className="h-9 text-sm" />
-                  ) : (
-                    <p className="text-sm text-gray-900 py-2">—</p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {isEditingContact && (
-              <div className="flex gap-2 pt-2">
-                <Button onClick={handleSave} size="sm" className="h-8 text-xs">
-                  Save
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleCancel} className="h-8 text-xs">
-                  Cancel
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Column 2 */}
-        <div className="space-y-6">
-          {/* Additional Details Section */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-gray-200">
-              <div className="flex items-center gap-2">
-                <IdentificationCard className="w-4 h-4 text-primary" />
-                <h3 className="text-sm font-semibold text-gray-900">
-                  Additional details
-                </h3>
-              </div>
-              {!isEditingAdditional && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleEditStart("additional")}
-                  className="h-7 px-2"
-                >
-                  <PencilSimple className="w-3.5 h-3.5" />
-                </Button>
-              )}
-            </div>
-
-            <div className="space-y-3">
-              {/* Occupation */}
-              <div className="grid grid-cols-[100px_1fr] gap-3 items-start">
-                <div className="pt-2 flex items-center gap-1.5">
-                  <Briefcase className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-xs text-gray-600">Occupation</span>
-                </div>
-                <div>
-                  {isEditingAdditional ? (
-                    <Input className="h-9 text-sm" />
-                  ) : (
-                    <p className="text-sm text-gray-900 py-2">—</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Educational level */}
-              <div className="grid grid-cols-[100px_1fr] gap-3 items-start">
-                <div className="pt-2 flex items-center gap-1.5">
-                  <GraduationCap className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-xs text-gray-600">Education</span>
-                </div>
-                <div>
-                  {isEditingAdditional ? (
-                    <Input className="h-9 text-sm" />
-                  ) : (
-                    <p className="text-sm text-gray-900 py-2">—</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Language */}
-              <div className="grid grid-cols-[100px_1fr] gap-3 items-start">
-                <div className="pt-2 flex items-center gap-1.5">
-                  <Translate className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-xs text-gray-600">Language</span>
-                </div>
-                <div>
-                  {isEditingAdditional ? (
-                    <Input className="h-9 text-sm" />
-                  ) : (
-                    <p className="text-sm text-gray-900 py-2">—</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Marital Status */}
-              <div className="grid grid-cols-[100px_1fr] gap-3 items-start">
-                <div className="pt-2 flex items-center gap-1.5">
-                  <Heart className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-xs text-gray-600">Marital status</span>
-                </div>
-                <div>
-                  {isEditingAdditional ? (
-                    <Select>
-                      <SelectTrigger className="h-9 text-sm">
-                        <SelectValue placeholder="—" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Single">Single</SelectItem>
-                        <SelectItem value="Married">Married</SelectItem>
-                        <SelectItem value="Divorced">Divorced</SelectItem>
-                        <SelectItem value="Widowed">Widowed</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <p className="text-sm text-gray-900 py-2">—</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Baptized at */}
-              <div className="grid grid-cols-[100px_1fr] gap-3 items-start">
-                <div className="pt-2 flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-xs text-gray-600">Baptized at</span>
-                </div>
-                <div>
-                  {isEditingAdditional ? (
-                    <Input type="date" className="h-9 text-sm" />
-                  ) : (
-                    <p className="text-sm text-gray-900 py-2">—</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Joined church */}
-              <div className="grid grid-cols-[100px_1fr] gap-3 items-start">
-                <div className="pt-2 flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-xs text-gray-600">Joined</span>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-900 py-2">
-                    {new Date(person.createdAt).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {isEditingAdditional && (
-              <div className="flex gap-2 pt-2">
-                <Button onClick={handleSave} size="sm" className="h-8 text-xs">
-                  Save
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleCancel} className="h-8 text-xs">
-                  Cancel
-                </Button>
-              </div>
-            )}
-          </div>
-
-          {/* Family Section */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 pb-3 border-b border-gray-200">
+          {/* Family — always in the shorter column 1 */}
+          <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 bg-gray-50/60">
               <House className="w-4 h-4 text-primary" />
               <h3 className="text-sm font-semibold text-gray-900">Family</h3>
             </div>
-
-            <div className="space-y-3">
-              {/* Connected Family */}
-              <div className="grid grid-cols-[100px_1fr] gap-3 items-start">
-                <div className="pt-2 flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-xs text-gray-600">Family</span>
+            <div className="px-4 py-3">
+              {!person.familyId && (
+                <p className="text-sm text-gray-400">Not connected to a family</p>
+              )}
+              {person.familyId && loadingFamily && (
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-48" />
                 </div>
-                <div>
-                  {person.familyId ? (
-                    <div className="flex items-center gap-2 py-1">
-                      <Badge
-                        variant="secondary"
-                        className="bg-primary-light text-primary border-primary-lighter text-xs"
-                      >
-                        Mbaku
-                      </Badge>
-                      <Button variant="link" size="sm" className="h-auto p-0 text-primary text-xs">
-                        Open
-                      </Button>
+              )}
+              {person.familyId && !loadingFamily && family && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">{family.name}</p>
+                      {family.headOfHouse && (
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <Crown className="w-3 h-3 text-amber-500" />
+                          <span className="text-xs text-gray-500">Head: {family.headOfHouse.name}</span>
+                        </div>
+                      )}
                     </div>
-                  ) : (
-                    <p className="text-sm text-gray-500 py-2">
-                      Not connected
-                    </p>
+                    <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 text-xs">
+                      {family.memberCount ?? family.members?.length ?? 0} members
+                    </Badge>
+                  </div>
+                  {family.members && family.members.length > 0 && (
+                    <div className="space-y-1.5 pt-2 border-t border-gray-50">
+                      {family.members.map((m) => {
+                        const isHead = family.headOfHouseId === m.id;
+                        const initials = m.name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
+                        return (
+                          <div key={m.id} className="flex items-center gap-2.5 py-1">
+                            <Avatar className="w-6 h-6 flex-shrink-0">
+                              <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-semibold">
+                                {initials}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-sm text-gray-900 flex-1 min-w-0 truncate">{m.name}</span>
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              {isHead && <Crown className="w-3 h-3 text-amber-400" />}
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 bg-gray-50 text-gray-500 border-gray-200">
+                                {m.familyRole}
+                              </Badge>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   )}
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Column 3 */}
-        <div className="space-y-6">
-          {/* Health Details Section */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-gray-200">
-              <div className="flex items-center gap-2">
-                <FirstAid className="w-4 h-4 text-primary" />
-                <h3 className="text-sm font-semibold text-gray-900">
-                  Health details
-                </h3>
-              </div>
-              {!isEditingHealth && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleEditStart("health")}
-                  className="h-7 px-2"
-                >
-                  <PencilSimple className="w-3.5 h-3.5" />
-                </Button>
+              )}
+              {person.familyId && !loadingFamily && !family && (
+                <p className="text-sm text-gray-400">Family not found</p>
               )}
             </div>
-
-            <div className="space-y-3">
-              {/* Allergies */}
-              <div className="grid grid-cols-[100px_1fr] gap-3 items-start">
-                <div className="pt-2 flex items-center gap-1.5">
-                  <Warning className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-xs text-gray-600">Allergies</span>
-                </div>
-                <div>
-                  {isEditingHealth ? (
-                    <Input className="h-9 text-sm" />
-                  ) : (
-                    <p className="text-sm text-gray-900 py-2">—</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Emergency name */}
-              <div className="grid grid-cols-[100px_1fr] gap-3 items-start">
-                <div className="pt-2 flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-xs text-gray-600">Emergency</span>
-                </div>
-                <div>
-                  {isEditingHealth ? (
-                    <Input className="h-9 text-sm" />
-                  ) : (
-                    <p className="text-sm text-gray-900 py-2">—</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Emergency phone */}
-              <div className="grid grid-cols-[100px_1fr] gap-3 items-start">
-                <div className="pt-2 flex items-center gap-1.5">
-                  <Phone className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-xs text-gray-600">Emerg. phone</span>
-                </div>
-                <div>
-                  {isEditingHealth ? (
-                    <PhoneInput
-                      value={emergencyPhone}
-                      onChange={(value) => setEmergencyPhone((value as string) || "")}
-                      defaultCountry="CM"
-                      className="h-9"
-                    />
-                  ) : (
-                    <p className="text-sm text-gray-900 py-2">{emergencyPhone || "—"}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Emergency email */}
-              <div className="grid grid-cols-[100px_1fr] gap-3 items-start">
-                <div className="pt-2 flex items-center gap-1.5">
-                  <Envelope className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-xs text-gray-600">Emerg. email</span>
-                </div>
-                <div>
-                  {isEditingHealth ? (
-                    <Input type="email" className="h-9 text-sm" />
-                  ) : (
-                    <p className="text-sm text-gray-900 py-2">—</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Eating preferences */}
-              <div className="grid grid-cols-[100px_1fr] gap-3 items-start">
-                <div className="pt-2 flex items-center gap-1.5">
-                  <ForkKnife className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-xs text-gray-600">Diet</span>
-                </div>
-                <div>
-                  {isEditingHealth ? (
-                    <Input className="h-9 text-sm" />
-                  ) : (
-                    <p className="text-sm text-gray-900 py-2">—</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Medical notes */}
-              <div className="grid grid-cols-[100px_1fr] gap-3 items-start">
-                <div className="pt-2 flex items-center gap-1.5">
-                  <Notepad className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-xs text-gray-600">Medical notes</span>
-                </div>
-                <div>
-                  {isEditingHealth ? (
-                    <Input className="h-9 text-sm" />
-                  ) : (
-                    <p className="text-sm text-gray-900 py-2">—</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Blood type */}
-              <div className="grid grid-cols-[100px_1fr] gap-3 items-start">
-                <div className="pt-2 flex items-center gap-1.5">
-                  <Drop className="w-3.5 h-3.5 text-gray-400" />
-                  <span className="text-xs text-gray-600">Blood type</span>
-                </div>
-                <div>
-                  {isEditingHealth ? (
-                    <Select>
-                      <SelectTrigger className="h-9 text-sm">
-                        <SelectValue placeholder="—" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="A+">A+</SelectItem>
-                        <SelectItem value="A-">A-</SelectItem>
-                        <SelectItem value="B+">B+</SelectItem>
-                        <SelectItem value="B-">B-</SelectItem>
-                        <SelectItem value="AB+">AB+</SelectItem>
-                        <SelectItem value="AB-">AB-</SelectItem>
-                        <SelectItem value="O+">O+</SelectItem>
-                        <SelectItem value="O-">O-</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <p className="text-sm text-gray-900 py-2">—</p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {isEditingHealth && (
-              <div className="flex gap-2 pt-2">
-                <Button onClick={handleSave} size="sm" className="h-8 text-xs">
-                  Save
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleCancel} className="h-8 text-xs">
-                  Cancel
-                </Button>
-              </div>
-            )}
           </div>
+
+        </div>
+
+        {/* ── Column 2 ── */}
+        <div className="flex-1 min-w-0 space-y-4">
+
+          {/* Contact details */}
+          <Section
+            icon={EnvelopeSimple}
+            title="Contact details"
+            sectionKey="contact"
+            editingSection={editingSection}
+            onEdit={setEditingSection}
+            onSave={handleSave}
+            onCancel={handleCancel}
+          >
+            <FieldRow icon={EnvelopeSimple} label="Email" value={person.user?.email} editing={isEditingContact}>
+              <Input type="email" defaultValue={person.user?.email} className="h-8 text-sm" />
+            </FieldRow>
+            <FieldRow icon={Phone} label="Phone" value={phoneNumber || null} editing={isEditingContact}>
+              <PhoneInput
+                value={phoneNumber}
+                onChange={(v) => setPhoneNumber((v as string) || "")}
+                defaultCountry="CM"
+              />
+            </FieldRow>
+            <FieldRow icon={MapPin} label="Address" value={null} editing={isEditingContact}>
+              <Input className="h-8 text-sm" placeholder="Street address" />
+            </FieldRow>
+            <FieldRow icon={Globe} label="Country" value={selectedCountry?.name} editing={isEditingContact}>
+              <CountrySelector
+                value={selectedCountry?.name}
+                onChange={(c) => { setSelectedCountry(c); setSelectedState(null); setSelectedCity(null); }}
+              />
+            </FieldRow>
+            <FieldRow icon={MapTrifold} label="State" value={selectedState?.name} editing={isEditingContact}>
+              <StateSelector
+                countryCode={selectedCountry?.isoCode}
+                value={selectedState?.name}
+                onChange={(s) => { setSelectedState(s); setSelectedCity(null); }}
+              />
+            </FieldRow>
+            <FieldRow icon={Buildings} label="City" value={selectedCity?.name} editing={isEditingContact}>
+              <CitySelector
+                countryCode={selectedCountry?.isoCode}
+                stateCode={selectedState?.isoCode}
+                value={selectedCity?.name}
+                onChange={setSelectedCity}
+              />
+            </FieldRow>
+            <FieldRow icon={Hash} label="Zip code" value={null} editing={isEditingContact}>
+              <Input className="h-8 text-sm" placeholder="Zip / postal code" />
+            </FieldRow>
+          </Section>
+
+          {/* Health details */}
+          <Section
+            icon={FirstAid}
+            title="Health details"
+            sectionKey="health"
+            editingSection={editingSection}
+            onEdit={setEditingSection}
+            onSave={handleSave}
+            onCancel={handleCancel}
+          >
+            <FieldRow icon={Warning} label="Allergies" value={null} editing={isEditingHealth}>
+              <Input className="h-8 text-sm" />
+            </FieldRow>
+            <FieldRow icon={ForkKnife} label="Diet" value={null} editing={isEditingHealth}>
+              <Input className="h-8 text-sm" />
+            </FieldRow>
+            <FieldRow icon={Notepad} label="Medical notes" value={null} editing={isEditingHealth}>
+              <Input className="h-8 text-sm" />
+            </FieldRow>
+            <FieldRow icon={Drop} label="Blood type" value={null} editing={isEditingHealth}>
+              <Select>
+                <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select" /></SelectTrigger>
+                <SelectContent>
+                  {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((t) => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FieldRow>
+          </Section>
+
         </div>
       </div>
     </div>
   );
+
 }

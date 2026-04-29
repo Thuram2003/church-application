@@ -6,28 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { CardListSkeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/EmptyState";
+import { usePersonGroups } from "@/hooks/use-groups";
+import type { GroupVisibility } from "@/types/groups";
 
 interface PersonGroupsTabProps {
   personId: string;
 }
-
-// Mock data - replace with actual API call
-const mockGroups = [
-  {
-    id: "1",
-    name: "Youth Ministry",
-    type: "Ministry",
-    role: "Member",
-    memberCount: 24,
-  },
-  {
-    id: "2",
-    name: "Worship Team",
-    type: "Service",
-    role: "Leader",
-    memberCount: 12,
-  },
-];
 
 function getInitials(name: string): string {
   return name
@@ -38,9 +22,22 @@ function getInitials(name: string): string {
     .slice(0, 2);
 }
 
+function getVisibilityBadgeClass(visibility: GroupVisibility) {
+  switch (visibility) {
+    case "private":
+      return "bg-orange-50 text-orange-700 border-orange-200";
+    case "public":
+      return "bg-blue-50 text-blue-700 border-blue-200";
+    case "team":
+      return "bg-primary-lighter text-primary-dark border-primary-light";
+    default:
+      return "bg-gray-50 text-gray-600 border-gray-200";
+  }
+}
+
 export function PersonGroupsTab({ personId }: PersonGroupsTabProps) {
-  const isLoading = false; // Replace with actual loading state
-  const groups = mockGroups; // Replace with actual data
+  const { data: response, isLoading } = usePersonGroups(personId);
+  const groups = response?.data ?? [];
 
   if (isLoading) {
     return (
@@ -62,7 +59,14 @@ export function PersonGroupsTab({ personId }: PersonGroupsTabProps) {
       <div className="flex items-center justify-between pb-4 border-b border-gray-200">
         <div className="flex items-center gap-2">
           <UsersThree className="w-5 h-5 text-primary" />
-          <h2 className="text-base font-semibold text-gray-900">Groups</h2>
+          <h2 className="text-base font-semibold text-gray-900">
+            Groups
+            {groups.length > 0 && (
+              <span className="ml-2 text-sm font-normal text-gray-500">
+                ({groups.length})
+              </span>
+            )}
+          </h2>
         </div>
         <Button size="sm" className="gap-2">
           <Plus className="w-4 h-4" />
@@ -89,9 +93,13 @@ export function PersonGroupsTab({ personId }: PersonGroupsTabProps) {
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <Avatar className="w-10 h-10">
-                      <AvatarFallback className="bg-primary-light text-primary font-semibold text-sm">
-                        {getInitials(group.name)}
-                      </AvatarFallback>
+                      {group.iconUrl ? (
+                        <img src={group.iconUrl} alt={group.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <AvatarFallback className="bg-primary-light text-primary font-semibold text-sm">
+                          {getInitials(group.name)}
+                        </AvatarFallback>
+                      )}
                     </Avatar>
                     <div>
                       <h3 className="text-sm font-semibold text-gray-900">
@@ -100,23 +108,29 @@ export function PersonGroupsTab({ personId }: PersonGroupsTabProps) {
                       <div className="flex items-center gap-2 mt-1">
                         <Badge
                           variant="secondary"
-                          className="bg-gray-50 text-gray-600 border-gray-200"
+                          className={getVisibilityBadgeClass(group.visibility)}
                         >
-                          {group.type}
+                          {group.visibility.charAt(0).toUpperCase() + group.visibility.slice(1)}
                         </Badge>
-                        <Badge
-                          variant="secondary"
-                          className="bg-primary-light text-primary border-primary-lighter"
-                        >
-                          {group.role}
-                        </Badge>
+                        {group.memberRole.isLeader && (
+                          <Badge
+                            variant="secondary"
+                            className="bg-primary-light text-primary border-primary-lighter"
+                          >
+                            Leader
+                          </Badge>
+                        )}
                       </div>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs text-gray-500">Members</p>
-                    <p className="text-sm font-semibold text-gray-900">
-                      {group.memberCount}
+                    <p className="text-xs text-gray-500">Joined</p>
+                    <p className="text-sm font-medium text-gray-700">
+                      {new Date(group.memberRole.joinedAt).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
                     </p>
                   </div>
                 </div>

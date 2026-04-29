@@ -143,7 +143,7 @@ export function CreatePayeeDialog({
               international
               defaultCountry="CM"
               value={phone}
-              onChange={(value) => setPhone(value || "")}
+              onChange={(value) => setPhone((value as string) || "")}
             />
           </div>
         </div>

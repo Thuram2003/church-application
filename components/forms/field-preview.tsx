@@ -59,7 +59,7 @@ export function FieldPreview({
           <Input type="email" placeholder="your@email.com" />
         )}
         {element.type === "phone" && (
-          <PhoneInput international defaultCountry="CM" />
+          <PhoneInput international defaultCountry="CM" onChange={() => {}} />
         )}
         {element.type === "number" && <Input type="number" placeholder="0" />}
         {element.type === "date" && (

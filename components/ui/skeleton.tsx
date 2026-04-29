@@ -105,7 +105,24 @@ function TextSkeleton({ lines = 8 }: { lines?: number }) {
   );
 }
 
-/** Workspace list skeleton */
+/** Member list skeleton — matches MemberItem shape */
+function MemberListSkeleton({ count = 4 }: { count?: number }) {
+  return (
+    <div className="space-y-2">
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="flex items-center gap-2.5 px-2 py-1.5 border border-gray-100 rounded-md">
+          <Skeleton className="w-7 h-7 rounded-full flex-shrink-0" />
+          <div className="flex-1 space-y-1">
+            <Skeleton className="h-3 w-28" />
+            <Skeleton className="h-2.5 w-16" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+
 function WorkspaceListSkeleton() {
   return (
     <div className="w-full max-w-xl mx-auto">
@@ -139,5 +156,6 @@ export {
   FormSkeleton,
   CardListSkeleton,
   TextSkeleton,
+  MemberListSkeleton,
   WorkspaceListSkeleton,
 };

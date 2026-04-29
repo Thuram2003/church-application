@@ -20,7 +20,7 @@ export interface ApiErrorResponse {
 
 export * from "./form";
 export * from "./bible";
-export * from "./branches";
+export type { Branch, BranchesListResponse, CreateBranchRequest, UpdateBranchRequest } from "./branches";
 export * from "./families";
 export * from "./groups";
 export * from "./people";

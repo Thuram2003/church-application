@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { email } from "zod";
 
 export function AppSidebarUserMenu() {
   const router = useRouter();
@@ -123,7 +124,8 @@ export function AppSidebarUserMenu() {
       >
         <DropdownMenuLabel>
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none text-primary ">{fullName}</p>
+            <p className="text-sm font-medium leading-none ">{fullName}</p>
+            <p className="text-xs font-medium leading-none text-gray-400 ">{userEmail}</p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
@@ -142,9 +144,9 @@ export function AppSidebarUserMenu() {
         <DropdownMenuItem
           onClick={handleLogout}
           disabled={isPending}
-          className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+          className="cursor-pointer text-red-600 hover:text-red-600 hover:bg-red-50"
         >
-          <SignOutIcon className="mr-2 h-4 w-4" />
+          <SignOutIcon className="mr-2 h-4 w-4 text-red-600" />
           <span>{isPending ? "Logging out..." : "Logout"}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>

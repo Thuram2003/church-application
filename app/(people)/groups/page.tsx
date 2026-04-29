@@ -27,7 +27,7 @@ import { useGroups, useCreateGroup } from "@/hooks/use-groups";
 import type { Group, CreateGroupRequest } from "@/types/groups";
 import { useMemo, useCallback } from "react";
 
-type FilterTab = "all" | "public" | "private" | "team";
+type FilterTab = "all" | "public" | "private" | "teams";
 type SortOption = "name" | "memberCount" | "visibility" | "enrollment";
 
 export default function GroupsPage() {
@@ -43,15 +43,11 @@ export default function GroupsPage() {
 
   // Transform groups data for table
   const tableData = useMemo(() => {
-    // Handle different response structures
     let groupsArray: Group[] = [];
     
     if (groupsResponse?.data) {
       if (Array.isArray(groupsResponse.data)) {
         groupsArray = groupsResponse.data;
-      } else if (groupsResponse.data.items && Array.isArray(groupsResponse.data.items)) {
-        // Handle paginated response like people
-        groupsArray = groupsResponse.data.items;
       } else {
         console.warn('Unexpected groups response structure:', groupsResponse.data);
         return [];

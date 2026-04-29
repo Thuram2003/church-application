@@ -25,7 +25,6 @@ import type {
   FamilyMemberRole,
   CreateFamilyMemberRow 
 } from "@/types/families";
-import type { Person } from "@/types/people";
 
 // Selected member with role
 interface SelectedMember {

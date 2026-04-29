@@ -33,7 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { StatCardsSkeleton } from "@/components/ui/skeleton";
+import { StatCardsSkeleton, MemberListSkeleton } from "@/components/ui/skeleton";
 import { CreatePeopleDialog } from "@/components/people/CreatePeopleDialog";
 import { usePeople, useCreatePeopleBulk } from "@/hooks/use-people";
 import { useFamilies } from "@/hooks/use-families";
@@ -47,16 +47,14 @@ export default function HomePage() {
   const router = useRouter();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
-  // API data
+  // Each query is independent — they all fire in parallel
   const { data: peopleResponse, isLoading: loadingPeople } = usePeople({ limit: 50, offset: 0 });
   const { data: familiesResponse, isLoading: loadingFamilies } = useFamilies();
   const { data: groupsResponse, isLoading: loadingGroups } = useGroups();
 
   const createPeopleMutation = useCreatePeopleBulk();
 
-  const isLoading = loadingPeople || loadingFamilies || loadingGroups;
-
-  // Counts
+  // Derived counts — each resolves independently
   const allPeople = useMemo(() => {
     const items = peopleResponse?.data?.items ?? [];
     return items.filter((p: any) => !p.archivedAt);
@@ -78,14 +76,16 @@ export default function HomePage() {
     return items.length;
   }, [groupsResponse]);
 
-  // Recently added — last 5 by createdAt
+  // Recently added — last 4 by createdAt
   const recentMembers = useMemo(() => {
     return [...allPeople]
       .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, 4);
   }, [allPeople]);
 
-  // Handlers
+  // Stat cards show skeleton only while their own data is loading
+  const statsLoading = loadingPeople || loadingFamilies || loadingGroups;
+
   const handleCreatePeople = async (people: CreatePeoplePersonRequest[]) => {
     try {
       await createPeopleMutation.mutateAsync({ people, defaultRole: "member" });
@@ -101,8 +101,8 @@ export default function HomePage() {
         <h1 className="text-lg font-semibold">Dashboard</h1>
       </div>
 
-      {/* Stats Cards */}
-      {isLoading ? (
+      {/* Stats Cards — skeleton until all three counts are ready */}
+      {statsLoading ? (
         <StatCardsSkeleton count={4} />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -128,26 +128,32 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Summary Cards Row */}
+      {/* Summary Cards Row — each section has its own loading state */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Recently Added Members */}
         <SummaryCard
           title="Recently Added Members"
           emptyIcon={UserPlus}
           emptyText="No people added yet"
-          hasData={recentMembers.length > 0}
+          hasData={!loadingPeople && recentMembers.length > 0}
           onSeeAll={() => router.push("/people")}
         >
-          <div className="space-y-2">
-            {recentMembers.map((member: any) => (
-              <MemberItem
-                key={member.id}
-                id={member.id}
-                name={member.user?.name ?? member.userId}
-                role={member.ageGroup ?? member.role}
-                onView={() => router.push("/people")}
-              />
-            ))}
-          </div>
+          {/* Only show skeleton while loading — once done, let SummaryCard handle empty state */}
+          {loadingPeople ? (
+            <MemberListSkeleton count={4} />
+          ) : recentMembers.length > 0 ? (
+            <div className="space-y-2">
+              {recentMembers.map((member: any) => (
+                <MemberItem
+                  key={member.id}
+                  id={member.id}
+                  name={member.user?.name ?? member.userId}
+                  role={member.ageGroup ?? member.role}
+                  onView={() => router.push("/people")}
+                />
+              ))}
+            </div>
+          ) : null}
         </SummaryCard>
 
         <SummaryCard

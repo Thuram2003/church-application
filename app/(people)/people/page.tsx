@@ -5,11 +5,9 @@ import {
   UserPlus,
   CaretDown,
   MagnifyingGlass,
-  Sliders,
   ArrowsDownUp,
   DotsThree,
   UserCircle,
-  Baby,
   Eye,
   Archive,
 } from "@phosphor-icons/react";
@@ -35,7 +33,7 @@ import { DataTable } from "@/components/ui/data-table";
 import { peopleColumns } from "@/components/people/tables/people-columns";
 import { StatCardsSkeleton, TableSkeleton } from "@/components/ui/skeleton";
 import { usePeople, useCreatePeopleBulk } from "@/hooks/use-people";
-import { CreatePeoplePersonRequest, Member } from "@/types/people";
+import { CreatePeoplePersonRequest } from "@/types/people";
 
 type FilterTab = "all" | "active" | "visitors" | "archived";
 type SortOption = "joined-church" | "name" | "age-group" | "status";
@@ -45,7 +43,7 @@ export default function PeoplePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("joined-church");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [pagination, setPagination] = useState({ limit: 50, offset: 0 });
+  const [pagination] = useState({ limit: 50, offset: 0 });
 
   // Fetch people data from API
   const { data: peopleResponse, isLoading, error } = usePeople(pagination);
@@ -154,8 +152,6 @@ export default function PeoplePage() {
   const totalPeople = allPeople.filter(p => p.archivedAt == null).length;
   const activePeople = allPeople.filter(p => p.status === "active" && p.archivedAt == null).length;
   const visitors = allPeople.filter(p => (p.isVisitor === true || p.status === "visitor") && p.archivedAt == null).length;
-  const adults = allPeople.filter(p => p.ageGroup === 'Adult' && p.archivedAt == null).length;
-  const children = allPeople.filter(p => p.ageGroup === 'Child' && p.archivedAt == null).length;
   const newMembers = allPeople.filter(p => p.status === 'new' && p.archivedAt == null).length;
 
   if (isLoading) {
@@ -182,7 +178,6 @@ export default function PeoplePage() {
   }
 
   const people = filteredAndSortedPeople;
-  const meta = peopleResponse?.data?.meta;
 
   return (
     <div className="p-6 space-y-6">

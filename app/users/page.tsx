@@ -255,7 +255,7 @@ export default function UsersPage() {
   const totalUsers = users.length;
   const admins = users.filter((u) => u.role === "Admin").length;
   const pastors = users.filter((u) => u.role === "Pastor").length;
-  const customRoles = roles.filter((r) => r.type === "Custom Role").length;
+  const customRoles = roles.filter((r) => (r.type as string) === "Custom Role").length;
 
   const tabs: TabItem[] = [
     {
@@ -327,7 +327,7 @@ export default function UsersPage() {
       <TabNavigation
         tabs={tabs}
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={(value) => setActiveTab(value as TabType)}
       />
 
       {/* Invite User Dialog */}

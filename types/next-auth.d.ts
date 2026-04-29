@@ -9,6 +9,7 @@ declare module "next-auth" {
     firstName: string;
     lastName: string;
     country?: string;
+    /** Stored as boolean in our system (true = verified) */
     emailVerified: boolean;
     image?: string;
     role?: string;
@@ -52,5 +53,6 @@ declare module "next-auth/jwt" {
     branchId?: string;
     memberId?: string;
     accessToken: string;
+    accessTokenExpires?: number;
   }
 }

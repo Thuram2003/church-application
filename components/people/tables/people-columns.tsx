@@ -11,9 +11,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { DotsThreeVertical, Copy, Plus, ArrowsDownUpIcon } from "@phosphor-icons/react";
+import { DotsThreeVertical, ArrowsDownUpIcon } from "@phosphor-icons/react";
 import { Member } from "@/types/people";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 // Helper function to get initials from name
 function getInitials(name: string): string {
@@ -234,10 +234,8 @@ export const peopleColumns: ColumnDef<Member>[] = [
             <DropdownMenuContent align="end">
               {isArchived ? (
                 <>
-                  <DropdownMenuItem
-                    onClick={() => window.location.href = `/people/${personId}`}
-                  >
-                    View Details
+                  <DropdownMenuItem asChild>
+                    <Link href={`/people/${personId}`}>View Details</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem className="text-green-600">
                     Restore
@@ -248,14 +246,9 @@ export const peopleColumns: ColumnDef<Member>[] = [
                 </>
               ) : (
                 <>
-                  <DropdownMenuItem
-                    onClick={() => window.location.href = `/people/${personId}`}
-                  >
-                    Go to profile
+                  <DropdownMenuItem asChild>
+                    <Link href={`/people/${personId}`}>Go to profile</Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>Edit</DropdownMenuItem>
-                  <DropdownMenuItem>Transfer</DropdownMenuItem>
-                  <DropdownMenuItem>Update Status</DropdownMenuItem>
                   <DropdownMenuItem className="text-red-600">
                     Archive
                   </DropdownMenuItem>

@@ -15,6 +15,8 @@ export const groupsKeys = {
   members: () => [...groupsKeys.all, 'members'] as const,
   groupMembers: (branchId: string, groupId: string) => 
     [...groupsKeys.members(), branchId, groupId] as const,
+  memberGroups: (branchId: string, memberId: string) =>
+    [...groupsKeys.all, 'member-groups', branchId, memberId] as const,
 };
 
 export function useGroups() {
@@ -39,6 +41,18 @@ export function useGroupMembers(groupId: string) {
     queryKey: groupsKeys.groupMembers(branchId!, groupId),
     queryFn: () => groupsService.getGroupMembers(branchId!, groupId),
     enabled: !!branchId && !!groupId,
+  });
+}
+
+export function usePersonGroups(memberId: string) {
+  const { getCurrentWorkspace } = useWorkspace();
+  const { branchId } = getCurrentWorkspace();
+
+  return useQuery({
+    queryKey: groupsKeys.memberGroups(branchId!, memberId),
+    queryFn: () => groupsService.getGroupsForMember(branchId!, memberId),
+    enabled: !!branchId && !!memberId,
+    staleTime: 5 * 60 * 1000,
   });
 }
 
